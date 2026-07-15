@@ -1,0 +1,19 @@
+# Gradle
+.gradle/
+build/
+/tmp/
+
+# Android
+local.properties
+*.apk
+*.aar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# OS/System files
+.DS_Store
+Thumbs.db

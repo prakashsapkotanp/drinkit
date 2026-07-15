@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:drinkintest;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  flyway:
+    enabled: false
+
+jwt:
+  secret: test-jwt-secret-which-must-be-very-long-and-secure-for-testing-purposes-123456
+  expiration-ms: 3600000
