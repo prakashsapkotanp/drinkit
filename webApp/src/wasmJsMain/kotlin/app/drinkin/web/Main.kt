@@ -4,12 +4,14 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.window.CanvasBasedWindow
 import app.drinkin.shared.api.DrinkinApiClient
 
 // TODO: point to your deployed backend URL per environment
 private val apiClient = DrinkinApiClient(baseUrl = "http://localhost:8080/api")
 
+@OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     CanvasBasedWindow(canvasElementId = "drinkinCanvas") {
         DrinkinWebApp()
