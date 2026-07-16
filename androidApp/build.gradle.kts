@@ -36,6 +36,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("io.ktor:ktor-client-core:3.0.3")
 
     implementation(compose.runtime)
     implementation(compose.foundation)
