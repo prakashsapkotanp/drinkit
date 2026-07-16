@@ -20,6 +20,7 @@ kotlin {
         val wasmJsMain by getting {
             dependencies {
                 implementation(project(":shared"))
+                implementation("io.ktor:ktor-client-core:3.0.3")
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material)
