@@ -86,3 +86,8 @@ data class CreatePostRequest(
     val scenario: String? = null,
     val mediaUrls: List<String> = emptyList()
 )
+
+@Serializable
+data class ReactRequest(
+    val reactionType: String
+)

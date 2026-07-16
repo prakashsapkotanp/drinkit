@@ -59,11 +59,15 @@ class DrinkinApiClient(
         }.body()
 
     suspend fun likePost(postId: String) {
-        client.post("$baseUrl/posts/$postId/like") { withAuth() }
+        client.post("$baseUrl/posts/$postId/reactions") {
+            withAuth()
+            contentType(ContentType.Application.Json)
+            setBody(ReactRequest(reactionType = "LIKE"))
+        }
     }
 
     suspend fun unlikePost(postId: String) {
-        client.delete("$baseUrl/posts/$postId/like") { withAuth() }
+        client.delete("$baseUrl/posts/$postId/reactions") { withAuth() }
     }
 
     suspend fun followUser(userId: String) {
