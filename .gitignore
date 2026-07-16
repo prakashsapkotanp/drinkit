@@ -17,3 +17,6 @@ out/
 # OS/System files
 .DS_Store
 Thumbs.db
+
+# Kotlin JS/Wasm
+.kotlin/

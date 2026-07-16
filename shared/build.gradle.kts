@@ -15,20 +15,20 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-                implementation("io.ktor:ktor-client-core:2.3.11")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+                implementation("io.ktor:ktor-client-core:3.0.3")
+                implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
             }
         }
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:2.3.11")
+                implementation("io.ktor:ktor-client-okhttp:3.0.3")
             }
         }
         val wasmJsMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-js:2.3.11")
+                // Ktor 3.x client core automatically resolves the engine on wasmJs target
             }
         }
         val commonTest by getting {
@@ -44,5 +44,15 @@ android {
     compileSdk = 34
     defaultConfig {
         minSdk = 24
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }

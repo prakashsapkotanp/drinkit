@@ -36,6 +36,14 @@ jobs:
       - name: Build shared module
         run: ./gradlew :shared:build
 
+      - name: Run backend tests
+        run: ./gradlew :backend:test
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/drinkin
+          DB_USER: drinkin
+          DB_PASSWORD: drinkin
+          JWT_SECRET: ci-test-secret-not-for-production-use-only
+
       - name: Build backend
         run: ./gradlew :backend:build
         env:
