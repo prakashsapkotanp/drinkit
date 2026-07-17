@@ -20,4 +20,14 @@ interface PostRepository : JpaRepository<PostEntity, UUID> {
         @Param("cursor") cursor: OffsetDateTime?,
         pageable: Pageable
     ): List<PostEntity>
+
+    @Query("""
+        SELECT p FROM PostEntity p
+        WHERE (:cursor IS NULL OR p.createdAt < :cursor)
+        ORDER BY p.createdAt DESC
+    """)
+    fun findAllPosts(
+        @Param("cursor") cursor: OffsetDateTime?,
+        pageable: Pageable
+    ): List<PostEntity>
 }
