@@ -75,10 +75,8 @@ class FeedController(
         val user = userRepository.findById(userId).orElse(null)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "User not found"))
 
-        val followedIds = followRepository.findFollowingIds(userId)
-        if (followedIds.isEmpty()) {
-            return ResponseEntity.ok(PostPage(items = emptyList(), nextCursor = null))
-        }
+        val followedIds = followRepository.findFollowingIds(userId).toMutableList()
+        val authorIds = followedIds.apply { add(userId) }
 
         val parsedCursor = cursor?.let {
             try {
@@ -90,7 +88,11 @@ class FeedController(
 
         val pageLimit = 10
         val pageable = PageRequest.of(0, pageLimit + 1)
-        val posts = postRepository.findFeedPosts(followedIds, parsedCursor, pageable)
+        val posts = if (authorIds.size > 1) {
+            postRepository.findFeedPosts(authorIds, parsedCursor, pageable)
+        } else {
+            postRepository.findAllPosts(parsedCursor, pageable)
+        }
 
         val filteredPosts = if (!user.ageVerified) {
             posts.filter { it.drinkCategory != DrinkCategory.ALCOHOLIC }

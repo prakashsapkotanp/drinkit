@@ -307,12 +307,12 @@ class DrinkinApplicationTests {
         )
             .andExpect(status().isNoContent)
 
-        // User 1's feed should now be empty (gracefully)
+        // User 1's feed should show global posts since they follow nobody
         mockMvc.perform(
             get("/api/feed")
                 .header("Authorization", "Bearer $user1Token")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.items", hasSize<Any>(0)))
+            .andExpect(jsonPath("$.items", hasSize<Any>(2)))
     }
 }
