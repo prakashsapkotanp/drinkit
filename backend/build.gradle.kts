@@ -36,6 +36,11 @@ dependencies {
     testImplementation("com.h2database:h2")
 }
 
+tasks.named<JavaExec>("bootRun") {
+    systemProperty("user.timezone", "UTC")
+    jvmArgs("-Duser.timezone=UTC")
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs += "-Xjsr305=strict"
@@ -45,4 +50,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    systemProperty("user.timezone", "UTC")
+    jvmArgs("-Duser.timezone=UTC")
 }

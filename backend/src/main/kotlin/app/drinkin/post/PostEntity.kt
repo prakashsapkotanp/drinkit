@@ -29,6 +29,7 @@ class PostEntity(
     @Column(name = "drink_type", length = 50)
     var drinkType: String? = null,
 
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     var rating: Int? = null,
 
     @Column(name = "tasting_notes", length = 1000)
