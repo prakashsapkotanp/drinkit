@@ -77,6 +77,12 @@ class DrinkinApiClient(
     suspend fun getUserProfile(userId: String): UserProfile =
         client.get("$baseUrl/users/$userId") { withAuth() }.body()
 
+    suspend fun getUserPosts(userId: String, cursor: String? = null): PostPage =
+        client.get("$baseUrl/users/$userId/posts") {
+            withAuth()
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
     suspend fun updateProfile(request: UpdateProfileRequest): UserProfile =
         client.put("$baseUrl/users/me") {
             withAuth()

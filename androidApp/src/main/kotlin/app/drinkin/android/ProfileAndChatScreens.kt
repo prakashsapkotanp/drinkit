@@ -278,6 +278,37 @@ fun FlowRow(
 }
 
 @Composable
+fun ProfilePostCard(post: Post) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        elevation = 1.dp
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(post.createdAt.take(10), style = MaterialTheme.typography.caption, color = AppMutedGray)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(post.text, style = MaterialTheme.typography.body1)
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Badge(backgroundColor = AppPrimaryBlue.copy(alpha = 0.1f)) {
+                    Text(post.drinkCategory.name, style = MaterialTheme.typography.caption, color = AppPrimaryBlue, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                }
+                post.drinkType?.let {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Badge(backgroundColor = Color.LightGray.copy(alpha = 0.4f)) {
+                        Text(it, style = MaterialTheme.typography.caption, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    }
+                }
+                post.rating?.let {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("⭐ $it/5", style = MaterialTheme.typography.caption)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun OtherProfileScreen(
     apiClient: DrinkinApiClient,
     userId: String,
@@ -285,34 +316,50 @@ fun OtherProfileScreen(
     onNavigateToChat: (conversationId: String) -> Unit
 ) {
     var userProfile by remember { mutableStateOf<UserProfile?>(null) }
+    var myUserId by remember { mutableStateOf<String?>(null) }
+    var userPosts by remember { mutableStateOf<List<Post>>(emptyList()) }
+
     var isLoading by remember { mutableStateOf(true) }
+    var isPostsLoading by remember { mutableStateOf(false) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
 
-    fun loadProfile() {
+    fun loadProfileAndPosts() {
         isLoading = true
         errorMsg = null
         coroutineScope.launch {
             try {
+                // Fetch logged-in user profile to compare
+                val myProfile = apiClient.getUserProfile("me")
+                myUserId = myProfile.id
+
                 val profile = apiClient.getUserProfile(userId)
                 userProfile = profile
+
+                // Fetch posts created by this user
+                isPostsLoading = true
+                val postsPage = apiClient.getUserPosts(profile.id)
+                userPosts = postsPage.items
             } catch (e: Exception) {
                 errorMsg = "Failed to load user profile: ${e.message}"
             } finally {
                 isLoading = false
+                isPostsLoading = false
             }
         }
     }
 
     LaunchedEffect(userId) {
-        loadProfile()
+        loadProfileAndPosts()
     }
+
+    val isMe = userProfile?.id == myUserId
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(userProfile?.displayName ?: userProfile?.username ?: "Profile") },
+                title = { Text(if (isMe) "My Profile" else (userProfile?.displayName ?: userProfile?.username ?: "Profile")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -332,144 +379,142 @@ fun OtherProfileScreen(
             } else if (errorMsg != null) {
                 Text(errorMsg!!, color = MaterialTheme.colors.error, modifier = Modifier.align(Alignment.Center))
             } else userProfile?.let { profile ->
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = 1.dp,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .background(AppPrimaryBlue.copy(alpha = 0.1f), shape = CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = AppPrimaryBlue, modifier = Modifier.size(48.dp))
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = 1.dp,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .background(AppPrimaryBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = AppPrimaryBlue, modifier = Modifier.size(48.dp))
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                            Text(profile.displayName ?: profile.username, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
-                            Text("@${profile.username}", style = MaterialTheme.typography.caption, color = AppMutedGray)
-                            Spacer(modifier = Modifier.height(8.dp))
+                                Text(profile.displayName ?: profile.username, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+                                Text("@${profile.username}", style = MaterialTheme.typography.caption, color = AppMutedGray)
+                                Spacer(modifier = Modifier.height(8.dp))
 
-                            Text(profile.bio ?: "No bio provided.", style = MaterialTheme.typography.body2, color = Color.Black)
-                            Spacer(modifier = Modifier.height(12.dp))
+                                Text(profile.bio ?: "No bio provided.", style = MaterialTheme.typography.body2, color = Color.Black)
+                                Spacer(modifier = Modifier.height(12.dp))
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                Text("${profile.followerCount} Followers", style = MaterialTheme.typography.caption)
-                                Text("${profile.followingCount} Following", style = MaterialTheme.typography.caption)
+                                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    Text("${profile.followerCount} Followers", style = MaterialTheme.typography.caption)
+                                    Text("${profile.followingCount} Following", style = MaterialTheme.typography.caption)
+                                }
                             }
                         }
                     }
 
-                    // Connection Action Button Row
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = 1.dp,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Professional Connection", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(12.dp))
+                    // Connection Action Button Row (Strictly hidden for "My Profile" / "isMe" view)
+                    if (!isMe) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = 1.dp,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    Text("Professional Connection", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold)
+                                    Spacer(modifier = Modifier.height(12.dp))
 
-                            when (profile.connectionStatus) {
-                                "NONE", null -> {
-                                    Button(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                try {
-                                                    apiClient.sendConnectionRequest(ConnectionRequest(addresseeId = profile.id))
-                                                    loadProfile() // refresh status
-                                                } catch (e: Exception) {
-                                                    // Handle error
+                                    when (profile.connectionStatus) {
+                                        "NONE", null -> {
+                                            Button(
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            apiClient.sendConnectionRequest(ConnectionRequest(addresseeId = profile.id))
+                                                            loadProfileAndPosts() // refresh
+                                                        } catch (e: Exception) {}
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(backgroundColor = AppPrimaryBlue),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text("Connect", color = Color.White)
+                                            }
+                                        }
+                                        "PENDING_SENT" -> {
+                                            Button(
+                                                onClick = {},
+                                                enabled = false,
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text("Request Pending")
+                                            }
+                                        }
+                                        "PENDING_RECEIVED" -> {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                Button(
+                                                    onClick = {
+                                                        coroutineScope.launch {
+                                                            try {
+                                                                val reqs = apiClient.getPendingRequests()
+                                                                val matching = reqs.items.firstOrNull { it.requester.id == profile.id }
+                                                                if (matching != null) {
+                                                                    apiClient.acceptConnection(matching.id)
+                                                                    loadProfileAndPosts()
+                                                                }
+                                                            } catch (e: Exception) {}
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF2E7D32)),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Accept", color = Color.White)
+                                                }
+
+                                                Button(
+                                                    onClick = {
+                                                        coroutineScope.launch {
+                                                            try {
+                                                                val reqs = apiClient.getPendingRequests()
+                                                                val matching = reqs.items.firstOrNull { it.requester.id == profile.id }
+                                                                if (matching != null) {
+                                                                    apiClient.rejectConnection(matching.id)
+                                                                    loadProfileAndPosts()
+                                                                }
+                                                            } catch (e: Exception) {}
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Reject", color = Color.White)
                                                 }
                                             }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = AppPrimaryBlue),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Connect", color = Color.White)
-                                    }
-                                }
-                                "PENDING_SENT" -> {
-                                    Button(
-                                        onClick = {},
-                                        enabled = false,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Request Pending")
-                                    }
-                                }
-                                "PENDING_RECEIVED" -> {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        Button(
-                                            onClick = {
-                                                coroutineScope.launch {
-                                                    try {
-                                                        val reqs = apiClient.getPendingRequests()
-                                                        val matching = reqs.items.firstOrNull { it.requester.id == profile.id }
-                                                        if (matching != null) {
-                                                            apiClient.acceptConnection(matching.id)
-                                                            loadProfile()
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        // Fallback direct accept
-                                                    }
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF2E7D32)),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("Accept", color = Color.White)
                                         }
-
-                                        Button(
-                                            onClick = {
-                                                coroutineScope.launch {
-                                                    try {
-                                                        val reqs = apiClient.getPendingRequests()
-                                                        val matching = reqs.items.firstOrNull { it.requester.id == profile.id }
-                                                        if (matching != null) {
-                                                            apiClient.rejectConnection(matching.id)
-                                                            loadProfile()
-                                                        }
-                                                    } catch (e: Exception) {
-                                                        // Fallback reject
+                                        "CONNECTED" -> {
+                                            Button(
+                                                onClick = {
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            val conv = apiClient.getOrCreateConversation(ConversationRequest(otherUserId = profile.id))
+                                                            onNavigateToChat(conv.id)
+                                                        } catch (e: Exception) {}
                                                     }
-                                                }
-                                            },
-                                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("Reject", color = Color.White)
-                                        }
-                                    }
-                                }
-                                "CONNECTED" -> {
-                                    Button(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                try {
-                                                    val conv = apiClient.getOrCreateConversation(ConversationRequest(otherUserId = profile.id))
-                                                    onNavigateToChat(conv.id)
-                                                } catch (e: Exception) {
-                                                    // Handle
-                                                }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(backgroundColor = AppPrimaryBlue),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text("Message", color = Color.White)
                                             }
-                                        },
-                                        colors = ButtonDefaults.buttonColors(backgroundColor = AppPrimaryBlue),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Message", color = Color.White)
+                                        }
                                     }
                                 }
                             }
@@ -477,19 +522,54 @@ fun OtherProfileScreen(
                     }
 
                     // Preferences Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = 1.dp,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Favorite Drink Profiles", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            if (profile.drinkPreferences.isEmpty()) {
-                                Text("No preference selected yet.", style = MaterialTheme.typography.caption, color = AppMutedGray)
-                            } else {
-                                Text(profile.drinkPreferences.joinToString(", "), style = MaterialTheme.typography.body2)
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = 1.dp,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Favorite Drink Profiles", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                if (profile.drinkPreferences.isEmpty()) {
+                                    Text("No preference selected yet.", style = MaterialTheme.typography.caption, color = AppMutedGray)
+                                } else {
+                                    Text(profile.drinkPreferences.joinToString(", "), style = MaterialTheme.typography.body2)
+                                }
                             }
+                        }
+                    }
+
+                    // Recent Activity & Posts Card (LinkedIn style)
+                    item {
+                        Text(
+                            text = if (isMe) "My Recent Activity" else "Recent Activity",
+                            style = MaterialTheme.typography.subtitle1,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
+                    if (isPostsLoading) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = AppPrimaryBlue)
+                            }
+                        }
+                    } else if (userPosts.isEmpty()) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                elevation = 1.dp
+                            ) {
+                                Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                                    Text("No drink reviews posted yet.", style = MaterialTheme.typography.caption, color = AppMutedGray)
+                                }
+                            }
+                        }
+                    } else {
+                        items(userPosts) { post ->
+                            ProfilePostCard(post = post)
                         }
                     }
                 }
@@ -775,6 +855,7 @@ fun ChatThreadScreen(
     var nextCursor by remember { mutableStateOf<String?>(null) }
     var hasMore by remember { mutableStateOf(true) }
     var isLoading by remember { mutableStateOf(true) }
+    var myUserId by remember { mutableStateOf<String?>(null) }
 
     var textInput by remember { mutableStateOf("") }
 
@@ -784,6 +865,10 @@ fun ChatThreadScreen(
         isLoading = true
         coroutineScope.launch {
             try {
+                // Fetch logged-in user profile to compare
+                val myProfile = apiClient.getUserProfile("me")
+                myUserId = myProfile.id
+
                 val page = apiClient.getMessages(conversationId)
                 messagesList = page.items
                 nextCursor = page.nextCursor
@@ -829,29 +914,24 @@ fun ChatThreadScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(messagesList) { msg ->
-                            val isMe = msg.senderId != messagesList.firstOrNull { it.senderId != msg.senderId }?.senderId // basic check
-                            // Wait, the client is the logged-in user, but wait: senderId comparison is better:
-                            // We can check if `msg.senderId` matches ourselves. Let's do that!
-                            // Or we can just let it display. Let's make sure alignment looks great.
-                            val align = if (msg.senderId == messagesList.firstOrNull { it.senderId == msg.senderId }?.senderId) Alignment.End else Alignment.Start // Wait, senderId is UUID, let's keep standard check
-                            val colorBg = if (msg.senderId == messagesList.firstOrNull { it.senderId == msg.senderId }?.senderId) AppPrimaryBlue else Color.LightGray.copy(alpha = 0.4f)
-
-                            // Let's just make it look gorgeous
-                            val textCol = if (msg.senderId == messagesList.firstOrNull { it.senderId == msg.senderId }?.senderId) Color.White else Color.Black
+                            val isMe = msg.senderId == myUserId
+                            val align = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
+                            val colorBg = if (isMe) AppPrimaryBlue else Color(0xFFE5E5EA)
+                            val textCol = if (isMe) Color.White else Color.Black
 
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp),
-                                contentAlignment = if (msg.senderId == messagesList.firstOrNull { it.senderId == msg.senderId }?.senderId) Alignment.CenterEnd else Alignment.CenterStart
+                                contentAlignment = align
                             ) {
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(if (msg.senderId == messagesList.firstOrNull { it.senderId == msg.senderId }?.senderId) AppPrimaryBlue else Color(0xFFE5E5EA))
+                                        .background(colorBg)
                                         .padding(12.dp)
                                 ) {
-                                    Text(msg.text, color = if (msg.senderId == messagesList.firstOrNull { it.senderId == msg.senderId }?.senderId) Color.White else Color.Black)
+                                    Text(msg.text, color = textCol)
                                 }
                             }
                         }
