@@ -315,4 +315,224 @@ class DrinkinApplicationTests {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.items", hasSize<Any>(2)))
     }
+
+    @Test
+    fun testConnectionsAndMessagingWorkflow() {
+        // Register User A
+        val userAReg = mapOf(
+            "email" to "usera@drinkin.app",
+            "username" to "userA",
+            "password" to "password123",
+            "dateOfBirth" to "1995-01-01"
+        )
+        val respA = mockMvc.perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userAReg))
+        ).andExpect(status().isCreated).andReturn()
+        val tokenA = objectMapper.readTree(respA.response.contentAsString).get("token").asText()
+        val idA = objectMapper.readTree(respA.response.contentAsString).get("userId").asText()
+
+        // Register User B
+        val userBReg = mapOf(
+            "email" to "userb@drinkin.app",
+            "username" to "userB",
+            "password" to "password123",
+            "dateOfBirth" to "1993-01-01"
+        )
+        val respB = mockMvc.perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userBReg))
+        ).andExpect(status().isCreated).andReturn()
+        val tokenB = objectMapper.readTree(respB.response.contentAsString).get("token").asText()
+        val idB = objectMapper.readTree(respB.response.contentAsString).get("userId").asText()
+
+        // Register User C
+        val userCReg = mapOf(
+            "email" to "userc@drinkin.app",
+            "username" to "userC",
+            "password" to "password123",
+            "dateOfBirth" to "1992-01-01"
+        )
+        val respC = mockMvc.perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(userCReg))
+        ).andExpect(status().isCreated).andReturn()
+        val tokenC = objectMapper.readTree(respC.response.contentAsString).get("token").asText()
+        val idC = objectMapper.readTree(respC.response.contentAsString).get("userId").asText()
+
+        // 1. User search validation
+        mockMvc.perform(
+            get("/api/users/search")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isBadRequest)
+
+        mockMvc.perform(
+            get("/api/users/search?q=")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isBadRequest)
+
+        mockMvc.perform(
+            get("/api/users/search?q=userB")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.items", hasSize<Any>(1)))
+            .andExpect(jsonPath("$.items[0].username", `is`("userB")))
+
+        // 2. Initial connectionStatus check (should be NONE)
+        mockMvc.perform(
+            get("/api/users/$idB")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.connectionStatus", `is`("NONE")))
+
+        // 3. Send connection request A -> B
+        val sendReq = mapOf("addresseeId" to idB)
+        val connResp = mockMvc.perform(
+            post("/api/connections")
+                .header("Authorization", "Bearer $tokenA")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sendReq))
+        ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.status", `is`("PENDING")))
+            .andReturn()
+        val connectionId = objectMapper.readTree(connResp.response.contentAsString).get("id").asText()
+
+        // 4. Bad requests: self-connection & duplicate
+        val selfReq = mapOf("addresseeId" to idA)
+        mockMvc.perform(
+            post("/api/connections")
+                .header("Authorization", "Bearer $tokenA")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(selfReq))
+        ).andExpect(status().isBadRequest)
+
+        mockMvc.perform(
+            post("/api/connections")
+                .header("Authorization", "Bearer $tokenA")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sendReq))
+        ).andExpect(status().isConflict)
+
+        // 5. Verify pending request status on both sides
+        // For Requester (User A), other user status is PENDING_SENT
+        mockMvc.perform(
+            get("/api/users/$idB")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.connectionStatus", `is`("PENDING_SENT")))
+
+        // For Addressee (User B), other user status is PENDING_RECEIVED
+        mockMvc.perform(
+            get("/api/users/$idA")
+                .header("Authorization", "Bearer $tokenB")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.connectionStatus", `is`("PENDING_RECEIVED")))
+
+        // User B gets requests list
+        mockMvc.perform(
+            get("/api/connections/requests")
+                .header("Authorization", "Bearer $tokenB")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.items", hasSize<Any>(1)))
+            .andExpect(jsonPath("$.items[0].id", `is`(connectionId)))
+            .andExpect(jsonPath("$.items[0].requester.username", `is`("userA")))
+
+        // 6. Security: User C cannot accept/reject the request
+        mockMvc.perform(
+            put("/api/connections/$connectionId/accept")
+                .header("Authorization", "Bearer $tokenC")
+        ).andExpect(status().isForbidden)
+
+        // 7. Accept connection
+        mockMvc.perform(
+            put("/api/connections/$connectionId/accept")
+                .header("Authorization", "Bearer $tokenB")
+        ).andExpect(status().isNoContent)
+
+        // 8. Verify accepted connection
+        mockMvc.perform(
+            get("/api/users/$idB")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.connectionStatus", `is`("CONNECTED")))
+
+        // User B's accepted connections list
+        mockMvc.perform(
+            get("/api/connections")
+                .header("Authorization", "Bearer $tokenB")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.items", hasSize<Any>(1)))
+            .andExpect(jsonPath("$.items[0].username", `is`("userA")))
+
+        // 9. Conversational/Messaging workflows
+        // Try to message C (should return 403)
+        val convWithC = mapOf("otherUserId" to idC)
+        mockMvc.perform(
+            post("/api/conversations")
+                .header("Authorization", "Bearer $tokenA")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(convWithC))
+        ).andExpect(status().isForbidden)
+
+        // Create conversation A <-> B
+        val convWithB = mapOf("otherUserId" to idB)
+        val convResp = mockMvc.perform(
+            post("/api/conversations")
+                .header("Authorization", "Bearer $tokenA")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(convWithB))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.otherUser.username", `is`("userB")))
+            .andReturn()
+        val conversationId = objectMapper.readTree(convResp.response.contentAsString).get("id").asText()
+
+        // Send a message A -> B
+        val msgReq = mapOf("text" to "Hello User B, cheers!")
+        mockMvc.perform(
+            post("/api/conversations/$conversationId/messages")
+                .header("Authorization", "Bearer $tokenA")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(msgReq))
+        ).andExpect(status().isCreated)
+            .andExpect(jsonPath("$.text", `is`("Hello User B, cheers!")))
+
+        // User C tries to read B's messages (403 expected)
+        mockMvc.perform(
+            get("/api/conversations/$conversationId/messages")
+                .header("Authorization", "Bearer $tokenC")
+        ).andExpect(status().isForbidden)
+
+        // User B reads messages
+        mockMvc.perform(
+            get("/api/conversations/$conversationId/messages")
+                .header("Authorization", "Bearer $tokenB")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.items", hasSize<Any>(1)))
+            .andExpect(jsonPath("$.items[0].text", `is`("Hello User B, cheers!")))
+
+        // Retrieve conversations list for User B
+        mockMvc.perform(
+            get("/api/conversations")
+                .header("Authorization", "Bearer $tokenB")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.items", hasSize<Any>(1)))
+            .andExpect(jsonPath("$.items[0].lastMessagePreview", `is`("Hello User B, cheers!")))
+
+        // 10. DELETE Connection (Unconnect)
+        mockMvc.perform(
+            delete("/api/connections/$connectionId")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isNoContent)
+
+        // Verify status is back to NONE
+        mockMvc.perform(
+            get("/api/users/$idB")
+                .header("Authorization", "Bearer $tokenA")
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.connectionStatus", `is`("NONE")))
+    }
 }

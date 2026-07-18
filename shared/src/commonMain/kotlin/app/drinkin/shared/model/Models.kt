@@ -15,7 +15,8 @@ data class UserProfile(
     val drinkPreferences: List<String> = emptyList(),
     val followerCount: Int = 0,
     val followingCount: Int = 0,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val connectionStatus: String? = null // NONE / PENDING_SENT / PENDING_RECEIVED / CONNECTED
 )
 
 @Serializable
@@ -90,4 +91,86 @@ data class CreatePostRequest(
 @Serializable
 data class ReactRequest(
     val reactionType: String
+)
+
+@Serializable
+data class UpdateProfileRequest(
+    val displayName: String? = null,
+    val bio: String? = null,
+    val avatarUrl: String? = null,
+    val drinkPreferences: List<String>? = null
+)
+
+@Serializable
+data class ConnectionRequest(
+    val addresseeId: String
+)
+
+@Serializable
+data class ConnectionRecord(
+    val id: String,
+    val requesterId: String,
+    val addresseeId: String,
+    val status: String,
+    val createdAt: String,
+    val updatedAt: String
+)
+
+@Serializable
+data class PendingConnectionRequest(
+    val id: String,
+    val requester: UserProfile,
+    val createdAt: String
+)
+
+@Serializable
+data class PendingConnectionRequestPage(
+    val items: List<PendingConnectionRequest>,
+    val nextCursor: String? = null
+)
+
+@Serializable
+data class UserPage(
+    val items: List<UserProfile>,
+    val nextCursor: String? = null
+)
+
+@Serializable
+data class ConversationRequest(
+    val otherUserId: String
+)
+
+@Serializable
+data class Conversation(
+    val id: String,
+    val otherUser: UserProfile,
+    val lastMessagePreview: String? = null,
+    val lastMessageAt: String? = null
+)
+
+@Serializable
+data class ConversationPage(
+    val items: List<Conversation>,
+    val nextCursor: String? = null
+)
+
+@Serializable
+data class MessageRequest(
+    val text: String
+)
+
+@Serializable
+data class Message(
+    val id: String,
+    val conversationId: String,
+    val senderId: String,
+    val text: String,
+    val read: Boolean,
+    val createdAt: String
+)
+
+@Serializable
+data class MessagePage(
+    val items: List<Message>,
+    val nextCursor: String? = null
 )

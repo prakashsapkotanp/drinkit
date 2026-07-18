@@ -128,6 +128,222 @@ paths:
         '204':
           description: Unfollowed successfully
 
+  /users/search:
+    get:
+      tags: [Users]
+      summary: Search users by username or display name
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Paginated search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+        '400':
+          description: Query string missing or empty
+
+  /connections:
+    post:
+      tags: [Social]
+      summary: Send a connection request
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectionRequest'
+      responses:
+        '201':
+          description: Connection request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRecord'
+        '400':
+          description: Bad request (self-connection)
+        '409':
+          description: Conflict (connection already exists)
+    get:
+      tags: [Social]
+      summary: Get current user's accepted connections
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Paginated list of accepted connections' user profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+
+  /connections/requests:
+    get:
+      tags: [Social]
+      summary: Get current user's pending incoming connection requests
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Paginated list of pending incoming connection requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingConnectionRequestPage'
+
+  /connections/{id}/accept:
+    put:
+      tags: [Social]
+      summary: Accept a pending connection request
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Connection accepted
+        '403':
+          description: Forbidden (not the addressee)
+        '404':
+          description: Connection request not found
+
+  /connections/{id}/reject:
+    put:
+      tags: [Social]
+      summary: Reject a pending connection request
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Connection rejected
+        '403':
+          description: Forbidden (not the addressee)
+        '404':
+          description: Connection request not found
+
+  /connections/{id}:
+    delete:
+      tags: [Social]
+      summary: Remove an accepted connection
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Connection removed
+        '403':
+          description: Forbidden (not a participant)
+        '404':
+          description: Connection not found
+
+  /conversations:
+    post:
+      tags: [Engagement]
+      summary: Get or create a conversation with a connected user
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationRequest'
+      responses:
+        '200':
+          description: Conversation retrieved or created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '403':
+          description: Forbidden (users are not connected)
+    get:
+      tags: [Engagement]
+      summary: List current user's conversations
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Paginated conversation list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationPage'
+
+  /conversations/{id}/messages:
+    get:
+      tags: [Engagement]
+      summary: Get messages in a conversation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Paginated list of messages (newest first)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessagePage'
+        '403':
+          description: Forbidden (not a participant)
+    post:
+      tags: [Engagement]
+      summary: Send a message in a conversation
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '403':
+          description: Forbidden (not a participant)
+
   /posts:
     post:
       tags: [Posts]
@@ -343,6 +559,9 @@ components:
         createdAt:
           type: string
           format: date-time
+        connectionStatus:
+          type: string
+          enum: [NONE, PENDING_SENT, PENDING_RECEIVED, CONNECTED]
 
     UpdateProfileRequest:
       type: object
@@ -491,6 +710,143 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Comment'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ConnectionRequest:
+      type: object
+      required: [addresseeId]
+      properties:
+        addresseeId:
+          type: string
+          format: uuid
+
+    ConnectionRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        requesterId:
+          type: string
+          format: uuid
+        addresseeId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PendingConnectionRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        requester:
+          $ref: '#/components/schemas/UserProfile'
+        createdAt:
+          type: string
+          format: date-time
+
+    PendingConnectionRequestPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingConnectionRequest'
+        nextCursor:
+          type: string
+          nullable: true
+
+    UserPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserProfile'
+        nextCursor:
+          type: string
+          nullable: true
+
+    ConversationRequest:
+      type: object
+      required: [otherUserId]
+      properties:
+        otherUserId:
+          type: string
+          format: uuid
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        otherUser:
+          $ref: '#/components/schemas/UserProfile'
+        lastMessagePreview:
+          type: string
+          nullable: true
+        lastMessageAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ConversationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+        nextCursor:
+          type: string
+          nullable: true
+
+    MessageRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          maxLength: 2000
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        text:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    MessagePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
         nextCursor:
           type: string
           nullable: true

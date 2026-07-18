@@ -1,5 +1,6 @@
 package app.drinkin.user
 
+import app.drinkin.shared.model.UpdateProfileRequest
 import app.drinkin.shared.model.UserProfile
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -7,18 +8,12 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import java.util.UUID
 
-data class UpdateProfileRequest(
-    val displayName: String? = null,
-    val bio: String? = null,
-    val avatarUrl: String? = null,
-    val drinkPreferences: List<String>? = null
-)
-
 @RestController
 @RequestMapping("/api/users")
 class UserController(
     private val userRepository: UserRepository,
-    private val followRepository: FollowRepository
+    private val followRepository: FollowRepository,
+    private val connectionRepository: ConnectionRepository
 ) {
 
     private fun getCurrentUserId(): UUID {
@@ -26,9 +21,37 @@ class UserController(
         return UUID.fromString(principal)
     }
 
-    private fun getUserProfile(user: UserEntity): UserProfile {
+    private fun getCurrentUserIdOrNull(): UUID? {
+        val auth = SecurityContextHolder.getContext().authentication
+        if (auth == null || auth.principal == "anonymousUser") return null
+        val principal = auth.principal as? String ?: return null
+        return try {
+            UUID.fromString(principal)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getUserProfile(user: UserEntity, currentUserId: UUID?): UserProfile {
         val followerCount = followRepository.countByIdFollowingId(user.id)
         val followingCount = followRepository.countByIdFollowerId(user.id)
+
+        // Compute connection status relative to the current logged-in user
+        val connectionStatus = if (currentUserId == null || currentUserId == user.id) {
+            null
+        } else {
+            val conn = connectionRepository.findConnectionBetween(currentUserId, user.id)
+            if (conn == null) {
+                "NONE"
+            } else if (conn.status == "ACCEPTED") {
+                "CONNECTED"
+            } else if (conn.status == "PENDING") {
+                if (conn.requesterId == currentUserId) "PENDING_SENT" else "PENDING_RECEIVED"
+            } else {
+                "NONE"
+            }
+        }
+
         return UserProfile(
             id = user.id.toString(),
             username = user.username,
@@ -38,7 +61,8 @@ class UserController(
             drinkPreferences = user.drinkPreferences.toList(),
             followerCount = followerCount,
             followingCount = followingCount,
-            createdAt = user.createdAt.toString()
+            createdAt = user.createdAt.toString(),
+            connectionStatus = connectionStatus
         )
     }
 
@@ -47,7 +71,7 @@ class UserController(
         val userId = getCurrentUserId()
         val user = userRepository.findById(userId).orElse(null)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "User not found"))
-        return ResponseEntity.ok(getUserProfile(user))
+        return ResponseEntity.ok(getUserProfile(user, userId))
     }
 
     @PutMapping("/me")
@@ -56,42 +80,73 @@ class UserController(
         val user = userRepository.findById(userId).orElse(null)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "User not found"))
 
-        if (req.displayName != null) {
-            if (req.displayName.length > 100) {
+        val reqDisplayName = req.displayName
+        if (reqDisplayName != null) {
+            if (reqDisplayName.length > 100) {
                 return ResponseEntity.badRequest().body(mapOf("error" to "Display name is too long (max 100 characters)"))
             }
-            user.displayName = req.displayName
+            user.displayName = reqDisplayName
         }
 
-        if (req.bio != null) {
-            if (req.bio.length > 500) {
+        val reqBio = req.bio
+        if (reqBio != null) {
+            if (reqBio.length > 500) {
                 return ResponseEntity.badRequest().body(mapOf("error" to "Bio is too long (max 500 characters)"))
             }
-            user.bio = req.bio
+            user.bio = reqBio
         }
 
-        if (req.avatarUrl != null) {
-            user.avatarUrl = req.avatarUrl
+        val reqAvatarUrl = req.avatarUrl
+        if (reqAvatarUrl != null) {
+            user.avatarUrl = reqAvatarUrl
         }
 
-        if (req.drinkPreferences != null) {
-            for (pref in req.drinkPreferences) {
+        val reqDrinkPreferences = req.drinkPreferences
+        if (reqDrinkPreferences != null) {
+            for (pref in reqDrinkPreferences) {
                 if (pref.length > 50) {
                     return ResponseEntity.badRequest().body(mapOf("error" to "Drink preference '$pref' is too long (max 50 characters)"))
                 }
             }
-            user.drinkPreferences = req.drinkPreferences.toTypedArray()
+            user.drinkPreferences = reqDrinkPreferences.toTypedArray()
         }
 
         userRepository.save(user)
-        return ResponseEntity.ok(getUserProfile(user))
+        return ResponseEntity.ok(getUserProfile(user, userId))
+    }
+
+    @GetMapping("/search")
+    fun searchUsers(
+        @RequestParam(required = false) q: String?,
+        @RequestParam(required = false) cursor: String?
+    ): ResponseEntity<Any> {
+        if (q.isNullOrBlank()) {
+            return ResponseEntity.badRequest().body(mapOf("error" to "Query parameter 'q' is required and cannot be empty"))
+        }
+
+        val currentUserId = getCurrentUserIdOrNull()
+        val pageLimit = 10
+        val pageable = org.springframework.data.domain.PageRequest.of(0, pageLimit + 1)
+        val users = userRepository.searchUsers(q, cursor, pageable)
+
+        val hasNext = users.size > pageLimit
+        val items = if (hasNext) users.subList(0, pageLimit) else users
+        val nextCursor = if (hasNext) items.last().username else null
+
+        val mappedItems = items.map { getUserProfile(it, currentUserId) }
+        val userPage = app.drinkin.shared.model.UserPage(
+            items = mappedItems,
+            nextCursor = nextCursor
+        )
+        return ResponseEntity.ok(userPage)
     }
 
     @GetMapping("/{id}")
     fun getUser(@PathVariable id: UUID): ResponseEntity<Any> {
         val user = userRepository.findById(id).orElse(null)
             ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "User not found"))
-        return ResponseEntity.ok(getUserProfile(user))
+        val currentUserId = getCurrentUserIdOrNull()
+        return ResponseEntity.ok(getUserProfile(user, currentUserId))
     }
 
     @PostMapping("/{id}/follow")
