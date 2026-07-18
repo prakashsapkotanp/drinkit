@@ -14,7 +14,7 @@ interface CommentRepository : JpaRepository<CommentEntity, UUID> {
     @Query("""
         SELECT c FROM CommentEntity c
         WHERE c.postId = :postId
-          AND (:cursor IS NULL OR c.createdAt < :cursor)
+          AND (cast(:cursor as timestamp) IS NULL OR c.createdAt < :cursor)
         ORDER BY c.createdAt DESC
     """)
     fun findCommentsByPostIdWithCursor(

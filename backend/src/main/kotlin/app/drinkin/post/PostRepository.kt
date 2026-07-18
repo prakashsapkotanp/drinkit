@@ -12,7 +12,7 @@ interface PostRepository : JpaRepository<PostEntity, UUID> {
     @Query("""
         SELECT p FROM PostEntity p
         WHERE p.author.id IN :authorIds
-          AND (:cursor IS NULL OR p.createdAt < :cursor)
+          AND (cast(:cursor as timestamp) IS NULL OR p.createdAt < :cursor)
         ORDER BY p.createdAt DESC
     """)
     fun findFeedPosts(
@@ -23,7 +23,7 @@ interface PostRepository : JpaRepository<PostEntity, UUID> {
 
     @Query("""
         SELECT p FROM PostEntity p
-        WHERE (:cursor IS NULL OR p.createdAt < :cursor)
+        WHERE (cast(:cursor as timestamp) IS NULL OR p.createdAt < :cursor)
         ORDER BY p.createdAt DESC
     """)
     fun findAllPosts(
