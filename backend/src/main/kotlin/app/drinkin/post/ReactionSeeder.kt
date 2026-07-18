@@ -32,39 +32,41 @@ class ReactionSeeder(
         }
 
         val isTestProfile = environment.activeProfiles.contains("test")
-        if (!isTestProfile && userRepository.count() == 0L) {
-            val defaultUser = UserEntity(
-                email = "user1@drinkin.app",
-                username = "user1",
-                passwordHash = passwordEncoder.encode("password123"),
-                dateOfBirth = LocalDate.of(1995, 5, 15),
-                ageVerified = true
-            )
-            userRepository.save(defaultUser)
+        if (!isTestProfile) {
+            if (!userRepository.existsByEmail("user1@drinkin.app")) {
+                val defaultUser = UserEntity(
+                    email = "user1@drinkin.app",
+                    username = "user1",
+                    passwordHash = passwordEncoder.encode("password123"),
+                    dateOfBirth = LocalDate.of(1995, 5, 15),
+                    ageVerified = true
+                )
+                userRepository.save(defaultUser)
 
-            val post1 = PostEntity(
-                author = defaultUser,
-                text = "Welcome to Drinkin'! This is a default seeded post about an amazing robust craft stout. Dark chocolate and espresso notes are incredibly present!",
-                drinkCategory = DrinkCategory.ALCOHOLIC,
-                drinkType = "Stout",
-                rating = 5,
-                tastingNotes = "Roasty, dark chocolate, espresso",
-                scenario = "Evening relaxation",
-                createdAt = OffsetDateTime.now().minusHours(2)
-            )
+                val post1 = PostEntity(
+                    author = defaultUser,
+                    text = "Welcome to Drinkin'! This is a default seeded post about an amazing robust craft stout. Dark chocolate and espresso notes are incredibly present!",
+                    drinkCategory = DrinkCategory.ALCOHOLIC,
+                    drinkType = "Stout",
+                    rating = 5,
+                    tastingNotes = "Roasty, dark chocolate, espresso",
+                    scenario = "Evening relaxation",
+                    createdAt = OffsetDateTime.now().minusHours(2)
+                )
 
-            val post2 = PostEntity(
-                author = defaultUser,
-                text = "Just started my morning with a pour-over of single-origin Ethiopian coffee. Extremely bright floral and citrus notes!",
-                drinkCategory = DrinkCategory.NON_ALCOHOLIC,
-                drinkType = "Coffee",
-                rating = 4,
-                tastingNotes = "Bright, citrus, jasmine",
-                scenario = "Morning routine",
-                createdAt = OffsetDateTime.now().minusHours(1)
-            )
+                val post2 = PostEntity(
+                    author = defaultUser,
+                    text = "Just started my morning with a pour-over of single-origin Ethiopian coffee. Extremely bright floral and citrus notes!",
+                    drinkCategory = DrinkCategory.NON_ALCOHOLIC,
+                    drinkType = "Coffee",
+                    rating = 4,
+                    tastingNotes = "Bright, citrus, jasmine",
+                    scenario = "Morning routine",
+                    createdAt = OffsetDateTime.now().minusHours(1)
+                )
 
-            postRepository.saveAll(listOf(post1, post2))
+                postRepository.saveAll(listOf(post1, post2))
+            }
         }
     }
 }
