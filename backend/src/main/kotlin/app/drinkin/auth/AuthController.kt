@@ -39,18 +39,21 @@ class AuthController(
 
     @PostMapping("/register")
     fun register(@Valid @RequestBody req: RegisterRequest): ResponseEntity<Any> {
+        val emailTrimmed = req.email.trim()
+        val usernameTrimmed = req.username.trim()
+        val passwordTrimmed = req.password.trim()
         val age = Period.between(req.dateOfBirth, LocalDate.now()).years
         if (age < MIN_DRINKING_AGE) {
             return ResponseEntity.badRequest().body(mapOf("error" to "Must be at least $MIN_DRINKING_AGE years old"))
         }
-        if (userRepository.existsByEmail(req.email) || userRepository.existsByUsername(req.username)) {
+        if (userRepository.existsByEmail(emailTrimmed) || userRepository.existsByUsername(usernameTrimmed)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to "Email or username already exists"))
         }
 
         val user = UserEntity(
-            email = req.email,
-            username = req.username,
-            passwordHash = passwordEncoder.encode(req.password),
+            email = emailTrimmed,
+            username = usernameTrimmed,
+            passwordHash = passwordEncoder.encode(passwordTrimmed),
             dateOfBirth = req.dateOfBirth,
             ageVerified = true
         )
@@ -63,10 +66,12 @@ class AuthController(
 
     @PostMapping("/login")
     fun login(@Valid @RequestBody req: LoginRequest): ResponseEntity<Any> {
-        val user = userRepository.findByEmail(req.email)
+        val emailTrimmed = req.email.trim()
+        val passwordTrimmed = req.password.trim()
+        val user = userRepository.findByEmail(emailTrimmed)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "Invalid credentials"))
 
-        if (!passwordEncoder.matches(req.password, user.passwordHash)) {
+        if (!passwordEncoder.matches(passwordTrimmed, user.passwordHash)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("error" to "Invalid credentials"))
         }
 

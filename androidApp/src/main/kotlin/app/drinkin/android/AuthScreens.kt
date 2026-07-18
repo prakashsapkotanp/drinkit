@@ -1,11 +1,15 @@
 package app.drinkin.android
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -15,6 +19,7 @@ import app.drinkin.shared.model.RegisterRequest
 import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import android.annotation.SuppressLint
 import java.time.LocalDate
 import java.time.Period
 
@@ -22,6 +27,7 @@ private val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toR
 
 fun isValidEmail(email: String): Boolean = emailRegex.matches(email)
 
+@SuppressLint("NewApi")
 fun isUnderage(dobString: String): Boolean {
     return try {
         val dob = LocalDate.parse(dobString)
@@ -45,6 +51,38 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+
+    val performLogin = {
+        val trimmedEmail = email.trim()
+        val trimmedPassword = password.trim()
+        if (!isValidEmail(trimmedEmail)) {
+            errorMsg = "Please enter a valid email address."
+        } else if (trimmedPassword.length < 8) {
+            errorMsg = "Password must be at least 8 characters long."
+        } else {
+            isLoading = true
+            coroutineScope.launch {
+                try {
+                    val response = apiClient.login(LoginRequest(email = trimmedEmail, password = trimmedPassword))
+                    tokenManager.saveToken(response.token)
+                    apiClient.setAuthToken(response.token)
+                    onAuthSuccess(response.token)
+                } catch (e: ResponseException) {
+                    errorMsg = when (e.response.status.value) {
+                        401 -> "Invalid credentials. Email or password is incorrect."
+                        409 -> "Email already registered."
+                        400 -> "Bad request. Please verify inputs."
+                        else -> "Server error (${e.response.status.value}). Please try again."
+                    }
+                } catch (e: Exception) {
+                    errorMsg = "Network failure. Please check your connection and try again."
+                } finally {
+                    isLoading = false
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Login to Drinkin'") }) }
@@ -65,7 +103,13 @@ fun LoginScreen(
                 },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next,
+                    keyboardType = KeyboardType.Email
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -78,7 +122,18 @@ fun LoginScreen(
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done,
+                    keyboardType = KeyboardType.Password
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (email.isNotBlank() && password.isNotBlank() && !isLoading) {
+                            performLogin()
+                        }
+                    }
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -91,38 +146,7 @@ fun LoginScreen(
                 CircularProgressIndicator()
             } else {
                 Button(
-                    onClick = {
-                        // Client-side validations
-                        if (!isValidEmail(email)) {
-                            errorMsg = "Please enter a valid email address."
-                            return@Button
-                        }
-                        if (password.length < 8) {
-                            errorMsg = "Password must be at least 8 characters long."
-                            return@Button
-                        }
-
-                        isLoading = true
-                        coroutineScope.launch {
-                            try {
-                                val response = apiClient.login(LoginRequest(email = email, password = password))
-                                tokenManager.saveToken(response.token)
-                                apiClient.setAuthToken(response.token)
-                                onAuthSuccess(response.token)
-                            } catch (e: ResponseException) {
-                                errorMsg = when (e.response.status.value) {
-                                    401 -> "Invalid credentials. Email or password is incorrect."
-                                    409 -> "Email already registered."
-                                    400 -> "Bad request. Please verify inputs."
-                                    else -> "Server error (${e.response.status.value}). Please try again."
-                                }
-                            } catch (e: Exception) {
-                                errorMsg = "Network failure. Please check your connection and try again."
-                            } finally {
-                                isLoading = false
-                            }
-                        }
-                    },
+                    onClick = { performLogin() },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = email.isNotBlank() && password.isNotBlank()
                 ) {
@@ -155,6 +179,59 @@ fun RegisterScreen(
     var isLoading by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+
+    val performRegister = {
+        val trimmedEmail = email.trim()
+        val trimmedUsername = username.trim()
+        val trimmedPassword = password.trim()
+        val trimmedDob = dob.trim()
+
+        // Client-side validations
+        if (!isValidEmail(trimmedEmail)) {
+            errorMsg = "Please enter a valid email address."
+        } else if (trimmedUsername.length !in 3..50) {
+            errorMsg = "Username must be between 3 and 50 characters."
+        } else if (trimmedPassword.length < 8) {
+            errorMsg = "Password must be at least 8 characters long."
+        } else {
+            // Validate Date format
+            val dobRegex = "^\\d{4}-\\d{2}-\\d{2}\$".toRegex()
+            if (!dobRegex.matches(trimmedDob)) {
+                errorMsg = "Date of Birth must be in YYYY-MM-DD format."
+            } else if (isUnderage(trimmedDob)) {
+                errorMsg = "Registration failed: Must be at least 18 years old."
+            } else {
+                isLoading = true
+                coroutineScope.launch {
+                    try {
+                        val response = apiClient.register(
+                            RegisterRequest(
+                                email = trimmedEmail,
+                                username = trimmedUsername,
+                                password = trimmedPassword,
+                                dateOfBirth = trimmedDob
+                            )
+                        )
+                        tokenManager.saveToken(response.token)
+                        apiClient.setAuthToken(response.token)
+                        onAuthSuccess(response.token)
+                    } catch (e: ResponseException) {
+                        errorMsg = when (e.response.status.value) {
+                            401 -> "Invalid credentials."
+                            409 -> "Email or username already in use."
+                            400 -> "Registration failed: Must be at least 18 years old."
+                            else -> "Server error (${e.response.status.value}). Please try again."
+                        }
+                    } catch (e: Exception) {
+                        errorMsg = "Network failure. Please check your connection and try again."
+                    } finally {
+                        isLoading = false
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Create Drinkin' Account") }) }
@@ -175,7 +252,13 @@ fun RegisterScreen(
                 },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next,
+                    keyboardType = KeyboardType.Email
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -186,7 +269,14 @@ fun RegisterScreen(
                     errorMsg = null
                 },
                 label = { Text("Username (3-50 chars)") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next,
+                    keyboardType = KeyboardType.Text
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -199,7 +289,13 @@ fun RegisterScreen(
                 label = { Text("Password (8+ chars)") },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next,
+                    keyboardType = KeyboardType.Password
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                )
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -211,7 +307,18 @@ fun RegisterScreen(
                 },
                 label = { Text("Date of Birth (YYYY-MM-DD)") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done,
+                    keyboardType = KeyboardType.Text
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank() && !isLoading) {
+                            performRegister()
+                        }
+                    }
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -224,59 +331,7 @@ fun RegisterScreen(
                 CircularProgressIndicator()
             } else {
                 Button(
-                    onClick = {
-                        // Client-side validations
-                        if (!isValidEmail(email)) {
-                            errorMsg = "Please enter a valid email address."
-                            return@Button
-                        }
-                        if (username.length !in 3..50) {
-                            errorMsg = "Username must be between 3 and 50 characters."
-                            return@Button
-                        }
-                        if (password.length < 8) {
-                            errorMsg = "Password must be at least 8 characters long."
-                            return@Button
-                        }
-                        // Validate Date format
-                        val dobRegex = "^\\d{4}-\\d{2}-\\d{2}\$".toRegex()
-                        if (!dobRegex.matches(dob)) {
-                            errorMsg = "Date of Birth must be in YYYY-MM-DD format."
-                            return@Button
-                        }
-                        if (isUnderage(dob)) {
-                            errorMsg = "Registration failed: Must be at least 18 years old."
-                            return@Button
-                        }
-
-                        isLoading = true
-                        coroutineScope.launch {
-                            try {
-                                val response = apiClient.register(
-                                    RegisterRequest(
-                                        email = email,
-                                        username = username,
-                                        password = password,
-                                        dateOfBirth = dob
-                                    )
-                                )
-                                tokenManager.saveToken(response.token)
-                                apiClient.setAuthToken(response.token)
-                                onAuthSuccess(response.token)
-                            } catch (e: ResponseException) {
-                                errorMsg = when (e.response.status.value) {
-                                    401 -> "Invalid credentials."
-                                    409 -> "Email or username already in use."
-                                    400 -> "Registration failed: Must be at least 18 years old."
-                                    else -> "Server error (${e.response.status.value}). Please try again."
-                                }
-                            } catch (e: Exception) {
-                                errorMsg = "Network failure. Please check your connection and try again."
-                            } finally {
-                                isLoading = false
-                            }
-                        }
-                    },
+                    onClick = { performRegister() },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank()
                 ) {
