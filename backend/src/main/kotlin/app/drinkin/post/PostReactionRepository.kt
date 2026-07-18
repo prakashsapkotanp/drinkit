@@ -15,7 +15,7 @@ interface PostReactionRepository : JpaRepository<PostReactionEntity, PostReactio
     @Query("""
         SELECT r FROM PostReactionEntity r
         WHERE r.postId = :postId
-          AND (:cursor IS NULL OR r.createdAt < :cursor)
+          AND (cast(:cursor as timestamp) IS NULL OR r.createdAt < :cursor)
         ORDER BY r.createdAt DESC
     """)
     fun findReactionsByPostIdWithCursor(
