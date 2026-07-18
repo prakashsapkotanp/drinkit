@@ -76,4 +76,81 @@ class DrinkinApiClient(
 
     suspend fun getUserProfile(userId: String): UserProfile =
         client.get("$baseUrl/users/$userId") { withAuth() }.body()
+
+    suspend fun updateProfile(request: UpdateProfileRequest): UserProfile =
+        client.put("$baseUrl/users/me") {
+            withAuth()
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+    suspend fun sendConnectionRequest(request: ConnectionRequest): ConnectionRecord =
+        client.post("$baseUrl/connections") {
+            withAuth()
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+    suspend fun getPendingRequests(cursor: String? = null): PendingConnectionRequestPage =
+        client.get("$baseUrl/connections/requests") {
+            withAuth()
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    suspend fun acceptConnection(connectionId: String) {
+        client.put("$baseUrl/connections/$connectionId/accept") {
+            withAuth()
+        }
+    }
+
+    suspend fun rejectConnection(connectionId: String) {
+        client.put("$baseUrl/connections/$connectionId/reject") {
+            withAuth()
+        }
+    }
+
+    suspend fun getConnections(cursor: String? = null): UserPage =
+        client.get("$baseUrl/connections") {
+            withAuth()
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    suspend fun removeConnection(connectionId: String) {
+        client.delete("$baseUrl/connections/$connectionId") {
+            withAuth()
+        }
+    }
+
+    suspend fun searchUsers(query: String, cursor: String? = null): UserPage =
+        client.get("$baseUrl/users/search") {
+            withAuth()
+            parameter("q", query)
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    suspend fun getOrCreateConversation(request: ConversationRequest): Conversation =
+        client.post("$baseUrl/conversations") {
+            withAuth()
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+    suspend fun getConversations(cursor: String? = null): ConversationPage =
+        client.get("$baseUrl/conversations") {
+            withAuth()
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    suspend fun getMessages(conversationId: String, cursor: String? = null): MessagePage =
+        client.get("$baseUrl/conversations/$conversationId/messages") {
+            withAuth()
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    suspend fun sendMessage(conversationId: String, request: MessageRequest): Message =
+        client.post("$baseUrl/conversations/$conversationId/messages") {
+            withAuth()
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
 }
