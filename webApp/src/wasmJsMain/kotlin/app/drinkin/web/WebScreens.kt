@@ -73,13 +73,13 @@ fun isUnderage(dobString: String): Boolean {
     }
 }
 
-// LinkedIn Color Theme
-val LinkedInBlue = Color(0xFF0A66C2)
-val LinkedInLightGray = Color(0xFFF3F2EF)
-val LinkedInTextBlack = Color(0xFF191919)
-val LinkedInMutedGray = Color(0xFF666666)
-val LinkedInBorderColor = Color(0xFFE0E0E0)
-val LinkedInCardBackground = Color(0xFFFFFFFF)
+// Drinkin Color Theme
+val DrinkinAccentBlue = Color(0xFF0A66C2)
+val DrinkinLightGray = Color(0xFFF3F2EF)
+val DrinkinTextBlack = Color(0xFF191919)
+val DrinkinMutedGray = Color(0xFF666666)
+val DrinkinBorderColor = Color(0xFFE0E0E0)
+val DrinkinCardBackground = Color(0xFFFFFFFF)
 
 @Composable
 fun WebLoginScreen(
@@ -127,7 +127,7 @@ fun WebLoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(LinkedInLightGray),
+            .background(DrinkinLightGray),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -149,18 +149,18 @@ fun WebLoginScreen(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
-                    Text("Drinkin", style = MaterialTheme.typography.h5, color = LinkedInBlue, fontWeight = FontWeight.Bold)
+                    Text("Drinkin", style = MaterialTheme.typography.h5, color = DrinkinAccentBlue, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(4.dp))
                     Box(
                         modifier = Modifier
-                            .background(LinkedInBlue, shape = RoundedCornerShape(4.dp))
+                            .background(DrinkinAccentBlue, shape = RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text("In", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     }
                 }
 
-                Text("Welcome to your professional drink network", style = MaterialTheme.typography.body2, color = LinkedInMutedGray)
+                Text("Welcome to your professional drink network", style = MaterialTheme.typography.body2, color = DrinkinMutedGray)
 
                 OutlinedTextField(
                     value = email,
@@ -207,12 +207,12 @@ fun WebLoginScreen(
                 }
 
                 if (isLoading) {
-                    CircularProgressIndicator(color = LinkedInBlue)
+                    CircularProgressIndicator(color = DrinkinAccentBlue)
                 } else {
                     Button(
                         onClick = { performLogin() },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = LinkedInBlue),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue),
                         shape = RoundedCornerShape(24.dp),
                         enabled = email.isNotBlank() && password.isNotBlank()
                     ) {
@@ -223,7 +223,7 @@ fun WebLoginScreen(
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 TextButton(onClick = onNavigateToRegister) {
-                    Text("Join now", color = LinkedInBlue, fontWeight = FontWeight.SemiBold)
+                    Text("Join now", color = DrinkinAccentBlue, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -299,7 +299,7 @@ fun WebRegisterScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(LinkedInLightGray),
+            .background(DrinkinLightGray),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -320,18 +320,18 @@ fun WebRegisterScreen(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
-                    Text("Drinkin", style = MaterialTheme.typography.h5, color = LinkedInBlue, fontWeight = FontWeight.Bold)
+                    Text("Drinkin", style = MaterialTheme.typography.h5, color = DrinkinAccentBlue, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(4.dp))
                     Box(
                         modifier = Modifier
-                            .background(LinkedInBlue, shape = RoundedCornerShape(4.dp))
+                            .background(DrinkinAccentBlue, shape = RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text("In", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     }
                 }
 
-                Text("Join the professional drink network", style = MaterialTheme.typography.body2, color = LinkedInMutedGray)
+                Text("Join the professional drink network", style = MaterialTheme.typography.body2, color = DrinkinMutedGray)
 
                 OutlinedTextField(
                     value = email,
@@ -412,12 +412,12 @@ fun WebRegisterScreen(
                 }
 
                 if (isLoading) {
-                    CircularProgressIndicator(color = LinkedInBlue)
+                    CircularProgressIndicator(color = DrinkinAccentBlue)
                 } else {
                     Button(
                         onClick = { performRegister() },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(backgroundColor = LinkedInBlue),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue),
                         shape = RoundedCornerShape(24.dp),
                         enabled = email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank()
                     ) {
@@ -428,7 +428,7 @@ fun WebRegisterScreen(
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 TextButton(onClick = onNavigateToLogin) {
-                    Text("Already on DrinkinIn? Sign in", color = LinkedInBlue, fontWeight = FontWeight.SemiBold)
+                    Text("Already on Drinkin? Sign in", color = DrinkinAccentBlue, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -483,7 +483,7 @@ fun WebDashboardScreen(
                 headline = "Specialty Coffee Trader • Sourcing fine Arabica",
                 unreadCount = 0,
                 messages = listOf(
-                    ChatMessage("John Coffee Roasters", "Welcome to DrinkinIn! Best place to log coffee tasting notes.", false, "Yesterday")
+                    ChatMessage("John Coffee Roasters", "Welcome to Drinkin! Best place to log coffee tasting notes.", false, "Yesterday")
                 )
             ),
             Contact(
@@ -554,11 +554,11 @@ fun WebDashboardScreen(
 
     Scaffold(
         topBar = {
-            // LinkedIn Style top navigation
+            // Drinkin-Style top navigation
             TopAppBar(
-                backgroundColor = LinkedInCardBackground,
+                backgroundColor = DrinkinCardBackground,
                 elevation = 1.dp,
-                modifier = Modifier.border(0.5.dp, LinkedInBorderColor)
+                modifier = Modifier.border(0.5.dp, DrinkinBorderColor)
             ) {
                 Row(
                     modifier = Modifier
@@ -569,7 +569,7 @@ fun WebDashboardScreen(
                     // Logo box
                     Box(
                         modifier = Modifier
-                            .background(LinkedInBlue, shape = RoundedCornerShape(4.dp))
+                            .background(DrinkinAccentBlue, shape = RoundedCornerShape(4.dp))
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                             .clickable { onTabChange(DashboardTab.HOME) }
                     ) {
@@ -583,14 +583,14 @@ fun WebDashboardScreen(
                         modifier = Modifier
                             .width(240.dp)
                             .height(36.dp)
-                            .background(LinkedInLightGray, shape = RoundedCornerShape(4.dp))
+                            .background(DrinkinLightGray, shape = RoundedCornerShape(4.dp))
                             .padding(horizontal = 12.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = LinkedInMutedGray, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = DrinkinMutedGray, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Search drinks, notes...", color = LinkedInMutedGray, fontSize = 13.sp)
+                            Text("Search drinks, notes...", color = DrinkinMutedGray, fontSize = 13.sp)
                         }
                     }
 
@@ -600,7 +600,7 @@ fun WebDashboardScreen(
                     @Composable
                     fun TabItem(tab: DashboardTab, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
                         val isSelected = currentTab == tab
-                        val color = if (isSelected) LinkedInBlue else LinkedInMutedGray
+                        val color = if (isSelected) DrinkinAccentBlue else DrinkinMutedGray
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
@@ -624,7 +624,7 @@ fun WebDashboardScreen(
                     Spacer(modifier = Modifier.width(16.dp))
 
                     TextButton(onClick = onLogout) {
-                        Text("Sign Out", color = LinkedInBlue, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text("Sign Out", color = DrinkinAccentBlue, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     }
                 }
             }
@@ -633,7 +633,7 @@ fun WebDashboardScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(LinkedInLightGray)
+                .background(DrinkinLightGray)
                 .padding(padding),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -662,16 +662,16 @@ fun WebDashboardScreen(
                             Box(
                                 modifier = Modifier
                                     .size(64.dp)
-                                    .background(LinkedInBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                    .background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Person, contentDescription = "Avatar", tint = LinkedInBlue, modifier = Modifier.size(36.dp))
+                                Icon(Icons.Default.Person, contentDescription = "Avatar", tint = DrinkinAccentBlue, modifier = Modifier.size(36.dp))
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            Text("Your Professional Profile", style = MaterialTheme.typography.subtitle1, fontWeight = FontWeight.Bold, color = LinkedInTextBlack)
-                            Text("Beverage Enthusiast", style = MaterialTheme.typography.caption, color = LinkedInMutedGray, textAlign = TextAlign.Center)
+                            Text("Your Professional Profile", style = MaterialTheme.typography.subtitle1, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
+                            Text("Beverage Enthusiast", style = MaterialTheme.typography.caption, color = DrinkinMutedGray, textAlign = TextAlign.Center)
 
                             Divider(modifier = Modifier.padding(vertical = 12.dp))
 
@@ -679,23 +679,23 @@ fun WebDashboardScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Profile viewers", color = LinkedInMutedGray, fontSize = 12.sp)
-                                Text("48", color = LinkedInBlue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                Text("Profile viewers", color = DrinkinMutedGray, fontSize = 12.sp)
+                                Text("48", color = DrinkinAccentBlue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                             }
                             Spacer(modifier = Modifier.height(6.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Connections", color = LinkedInMutedGray, fontSize = 12.sp)
-                                Text("135", color = LinkedInBlue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                Text("Connections", color = DrinkinMutedGray, fontSize = 12.sp)
+                                Text("135", color = DrinkinAccentBlue, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                             }
 
                             Divider(modifier = Modifier.padding(vertical = 12.dp))
 
-                            Text("About Me", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.SemiBold, color = LinkedInTextBlack, modifier = Modifier.align(Alignment.Start))
+                            Text("About Me", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.SemiBold, color = DrinkinTextBlack, modifier = Modifier.align(Alignment.Start))
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(userAboutText, fontSize = 12.sp, color = LinkedInMutedGray, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Start))
+                            Text(userAboutText, fontSize = 12.sp, color = DrinkinMutedGray, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Start))
                         }
                     }
 
@@ -730,7 +730,7 @@ fun WebDashboardScreen(
                 ) {
                     when (currentTab) {
                         DashboardTab.HOME -> {
-                            // LinkedIn Style "Start a Post" box
+                            // Drinkin-Style "Start a Post" box
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
@@ -741,10 +741,10 @@ fun WebDashboardScreen(
                                         Box(
                                             modifier = Modifier
                                                 .size(36.dp)
-                                                .background(LinkedInLightGray, shape = CircleShape),
+                                                .background(DrinkinLightGray, shape = CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(Icons.Default.Person, contentDescription = "Avatar", tint = LinkedInMutedGray, modifier = Modifier.size(20.dp))
+                                            Icon(Icons.Default.Person, contentDescription = "Avatar", tint = DrinkinMutedGray, modifier = Modifier.size(20.dp))
                                         }
 
                                         Spacer(modifier = Modifier.width(12.dp))
@@ -754,12 +754,12 @@ fun WebDashboardScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(44.dp)
-                                                .border(1.dp, LinkedInBorderColor, shape = RoundedCornerShape(24.dp))
+                                                .border(1.dp, DrinkinBorderColor, shape = RoundedCornerShape(24.dp))
                                                 .clickable { showStartPostModal = true }
                                                 .padding(horizontal = 16.dp),
                                             contentAlignment = Alignment.CenterStart
                                         ) {
-                                            Text("Start a post about a drink experience...", color = LinkedInMutedGray, fontSize = 14.sp)
+                                            Text("Start a post about a drink experience...", color = DrinkinMutedGray, fontSize = 14.sp)
                                         }
                                     }
 
@@ -777,7 +777,7 @@ fun WebDashboardScreen(
                                         ) {
                                             Text("🍹", fontSize = 16.sp)
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Alcoholic", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = LinkedInMutedGray)
+                                            Text("Alcoholic", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = DrinkinMutedGray)
                                         }
 
                                         Row(
@@ -786,7 +786,7 @@ fun WebDashboardScreen(
                                         ) {
                                             Text("☕", fontSize = 16.sp)
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Non-Alcoholic", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = LinkedInMutedGray)
+                                            Text("Non-Alcoholic", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = DrinkinMutedGray)
                                         }
 
                                         Row(
@@ -795,7 +795,7 @@ fun WebDashboardScreen(
                                         ) {
                                             Icon(Icons.Default.Star, contentDescription = "Rating", tint = Color(0xFFF1C40F), modifier = Modifier.size(18.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
-                                            Text("Rating", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = LinkedInMutedGray)
+                                            Text("Rating", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = DrinkinMutedGray)
                                         }
                                     }
                                 }
@@ -804,7 +804,7 @@ fun WebDashboardScreen(
                             // Feed posts
                             if (isLoading) {
                                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = LinkedInBlue)
+                                    CircularProgressIndicator(color = DrinkinAccentBlue)
                                 }
                             } else if (errorMsg != null) {
                                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -834,7 +834,7 @@ fun WebDashboardScreen(
 
                                         val isSaved = savedPosts.any { it.id == post.id }
 
-                                        WebLinkedInPostCard(
+                                        WebPostCard(
                                             post = post,
                                             isLiked = isLiked,
                                             likeCount = displayedLikeCount,
@@ -870,7 +870,7 @@ fun WebDashboardScreen(
                                     if (isPaginationLoading) {
                                         item {
                                             Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = LinkedInBlue)
+                                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = DrinkinAccentBlue)
                                             }
                                         }
                                     }
@@ -880,7 +880,7 @@ fun WebDashboardScreen(
 
                         DashboardTab.MY_GROUP -> {
                             // Network Tab
-                            Text("My Professional Drink Network", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold, color = LinkedInTextBlack)
+                            Text("My Professional Drink Network", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
 
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -897,15 +897,15 @@ fun WebDashboardScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Box(
-                                                modifier = Modifier.size(40.dp).background(LinkedInBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                                modifier = Modifier.size(40.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Icon(Icons.Default.Person, contentDescription = null, tint = LinkedInBlue)
+                                                Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue)
                                             }
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(item.first, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                                Text(item.second, color = LinkedInMutedGray, fontSize = 12.sp)
+                                                Text(item.second, color = DrinkinMutedGray, fontSize = 12.sp)
                                             }
 
                                             OutlinedButton(
@@ -914,14 +914,14 @@ fun WebDashboardScreen(
                                                     onForceFeedRefresh()
                                                 },
                                                 shape = RoundedCornerShape(16.dp),
-                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = LinkedInBlue),
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = DrinkinAccentBlue),
                                                 modifier = Modifier.height(32.dp)
                                             ) {
                                                 Text("Connect", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                             }
                                         }
                                         if (index < suggestions.size - 1) {
-                                            Divider(color = LinkedInBorderColor, thickness = 0.5.dp)
+                                            Divider(color = DrinkinBorderColor, thickness = 0.5.dp)
                                         }
                                     }
                                 }
@@ -931,7 +931,7 @@ fun WebDashboardScreen(
                         DashboardTab.CHAT -> {
                             // Dual-Pane Interactive Chat Tab
                             Row(
-                                modifier = Modifier.fillMaxSize().border(0.5.dp, LinkedInBorderColor, shape = RoundedCornerShape(8.dp)),
+                                modifier = Modifier.fillMaxSize().border(0.5.dp, DrinkinBorderColor, shape = RoundedCornerShape(8.dp)),
                                 horizontalArrangement = Arrangement.spacedBy(1.dp)
                             ) {
                                 // Contacts Pane (35% width)
@@ -939,11 +939,11 @@ fun WebDashboardScreen(
                                     modifier = Modifier.weight(0.35f).fillMaxHeight(),
                                     shape = RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp),
                                     elevation = 1.dp,
-                                    backgroundColor = LinkedInCardBackground
+                                    backgroundColor = DrinkinCardBackground
                                 ) {
                                     Column {
                                         Box(
-                                            modifier = Modifier.fillMaxWidth().background(LinkedInBlue).padding(16.dp),
+                                            modifier = Modifier.fillMaxWidth().background(DrinkinAccentBlue).padding(16.dp),
                                             contentAlignment = Alignment.CenterStart
                                         ) {
                                             Text("Messaging", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
@@ -955,24 +955,24 @@ fun WebDashboardScreen(
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .background(if (isSelected) LinkedInLightGray else LinkedInCardBackground)
+                                                        .background(if (isSelected) DrinkinLightGray else DrinkinCardBackground)
                                                         .clickable { selectedContactIndex = index }
                                                         .padding(12.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Box(
-                                                        modifier = Modifier.size(36.dp).background(LinkedInBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                                        modifier = Modifier.size(36.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
                                                         contentAlignment = Alignment.Center
                                                     ) {
-                                                        Icon(Icons.Default.Person, contentDescription = null, tint = LinkedInBlue)
+                                                        Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue)
                                                     }
                                                     Spacer(modifier = Modifier.width(10.dp))
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(contact.name, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                                        Text(contact.headline, color = LinkedInMutedGray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                        Text(contact.headline, color = DrinkinMutedGray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                                     }
                                                 }
-                                                Divider(color = LinkedInBorderColor, thickness = 0.5.dp)
+                                                Divider(color = DrinkinBorderColor, thickness = 0.5.dp)
                                             }
                                         }
                                     }
@@ -984,7 +984,7 @@ fun WebDashboardScreen(
                                     modifier = Modifier.weight(0.65f).fillMaxHeight(),
                                     shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
                                     elevation = 1.dp,
-                                    backgroundColor = LinkedInCardBackground
+                                    backgroundColor = DrinkinCardBackground
                                 ) {
                                     if (activeContact != null) {
                                         var chatInput by remember(selectedContactIndex) { mutableStateOf("") }
@@ -993,12 +993,12 @@ fun WebDashboardScreen(
                                         Column(modifier = Modifier.fillMaxSize()) {
                                             // Top active contact bar
                                             Row(
-                                                modifier = Modifier.fillMaxWidth().border(0.5.dp, LinkedInBorderColor).padding(16.dp),
+                                                modifier = Modifier.fillMaxWidth().border(0.5.dp, DrinkinBorderColor).padding(16.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Column {
                                                     Text(activeContact.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                                    Text(activeContact.headline, color = LinkedInMutedGray, fontSize = 11.sp)
+                                                    Text(activeContact.headline, color = DrinkinMutedGray, fontSize = 11.sp)
                                                 }
                                             }
 
@@ -1009,8 +1009,8 @@ fun WebDashboardScreen(
                                             ) {
                                                 items(chatMessages) { msg ->
                                                     val alignment = if (msg.isMe) Alignment.End else Alignment.Start
-                                                    val bgColor = if (msg.isMe) LinkedInBlue else LinkedInLightGray
-                                                    val textColor = if (msg.isMe) Color.White else LinkedInTextBlack
+                                                    val bgColor = if (msg.isMe) DrinkinAccentBlue else DrinkinLightGray
+                                                    val textColor = if (msg.isMe) Color.White else DrinkinTextBlack
                                                     val shape = if (msg.isMe) RoundedCornerShape(12.dp, 12.dp, 0.dp, 12.dp) else RoundedCornerShape(12.dp, 12.dp, 12.dp, 0.dp)
 
                                                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = alignment) {
@@ -1022,14 +1022,14 @@ fun WebDashboardScreen(
                                                             Text(msg.messageText, color = textColor, fontSize = 13.sp)
                                                         }
                                                         Spacer(modifier = Modifier.height(2.dp))
-                                                        Text(msg.timestamp, color = LinkedInMutedGray, fontSize = 9.sp)
+                                                        Text(msg.timestamp, color = DrinkinMutedGray, fontSize = 9.sp)
                                                     }
                                                 }
                                             }
 
                                             // Input message row
                                             Row(
-                                                modifier = Modifier.fillMaxWidth().border(0.5.dp, LinkedInBorderColor).padding(12.dp),
+                                                modifier = Modifier.fillMaxWidth().border(0.5.dp, DrinkinBorderColor).padding(12.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 OutlinedTextField(
@@ -1053,7 +1053,7 @@ fun WebDashboardScreen(
                                                                 val botReply = when {
                                                                     typedText.contains("wine", ignoreCase = true) -> "I highly recommend trying a 2018 Bourgogne Pinot Noir! It pairs incredibly with duck."
                                                                     typedText.contains("beer", ignoreCase = true) || typedText.contains("stout", ignoreCase = true) -> "A double dry-hopped IPA from New England or a robust imperial stout is definitely worth seeking out!"
-                                                                    else -> "That is a great perspective! I always log my drink experiences on DrinkinIn to track profiles."
+                                                                    else -> "That is a great perspective! I always log my drink experiences on Drinkin to track profiles."
                                                                 }
                                                                 chatMessages.add(ChatMessage(activeContact.name, botReply, false, "Just Now"))
                                                             }
@@ -1061,7 +1061,7 @@ fun WebDashboardScreen(
                                                     },
                                                     enabled = chatInput.isNotBlank()
                                                 ) {
-                                                    Icon(Icons.Default.Send, contentDescription = "Send", tint = LinkedInBlue)
+                                                    Icon(Icons.Default.Send, contentDescription = "Send", tint = DrinkinAccentBlue)
                                                 }
                                             }
                                         }
@@ -1076,7 +1076,7 @@ fun WebDashboardScreen(
 
                         DashboardTab.SAVED -> {
                             // Saved Posts Tab
-                            Text("Your Bookmarked Drink Experiences", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold, color = LinkedInTextBlack)
+                            Text("Your Bookmarked Drink Experiences", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
 
                             if (savedPosts.isEmpty()) {
                                 Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -1092,7 +1092,7 @@ fun WebDashboardScreen(
                                         val offset = likeCountOffsets[post.id] ?: 0
                                         val displayedLikeCount = post.likeCount + offset
 
-                                        WebLinkedInPostCard(
+                                        WebPostCard(
                                             post = post,
                                             isLiked = isLiked,
                                             likeCount = displayedLikeCount,
@@ -1127,15 +1127,15 @@ fun WebDashboardScreen(
                                 Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Box(
-                                            modifier = Modifier.size(72.dp).background(LinkedInBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                            modifier = Modifier.size(72.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(Icons.Default.Person, contentDescription = null, tint = LinkedInBlue, modifier = Modifier.size(44.dp))
+                                            Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(44.dp))
                                         }
                                         Spacer(modifier = Modifier.width(16.dp))
                                         Column {
                                             Text("Your Professional Drink Identity", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
-                                            Text("@professional_reviewer", color = LinkedInMutedGray, fontSize = 13.sp)
+                                            Text("@professional_reviewer", color = DrinkinMutedGray, fontSize = 13.sp)
                                         }
                                         Spacer(modifier = Modifier.weight(1f))
                                         OutlinedButton(
@@ -1165,19 +1165,19 @@ fun WebDashboardScreen(
                                     } else {
                                         Column {
                                             Text("Headline", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(bioText, color = LinkedInTextBlack, fontSize = 14.sp)
+                                            Text(bioText, color = DrinkinTextBlack, fontSize = 14.sp)
                                         }
 
                                         Column {
                                             Text("Drink Preferences", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(drinkPref, color = LinkedInTextBlack, fontSize = 14.sp)
+                                            Text(drinkPref, color = DrinkinTextBlack, fontSize = 14.sp)
                                         }
                                     }
 
                                     Divider()
 
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Text("Professional About Me Section", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = LinkedInTextBlack)
+                                        Text("Professional About Me Section", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = DrinkinTextBlack)
                                         OutlinedTextField(
                                             value = userAboutText,
                                             onValueChange = onUserAboutChange,
@@ -1202,11 +1202,11 @@ fun WebDashboardScreen(
                         elevation = 1.dp
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Saved Experience Cards", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold, color = LinkedInTextBlack)
+                            Text("Saved Experience Cards", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
                             Spacer(modifier = Modifier.height(8.dp))
 
                             if (savedPosts.isEmpty()) {
-                                Text("No saved reviews. Bookmark posts to quickly access them here.", fontSize = 12.sp, color = LinkedInMutedGray)
+                                Text("No saved reviews. Bookmark posts to quickly access them here.", fontSize = 12.sp, color = DrinkinMutedGray)
                             } else {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     savedPosts.take(4).forEach { item ->
@@ -1217,12 +1217,12 @@ fun WebDashboardScreen(
                                                 .padding(vertical = 4.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Icon(Icons.Default.Star, contentDescription = null, tint = LinkedInBlue, modifier = Modifier.size(14.dp))
+                                            Icon(Icons.Default.Star, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(14.dp))
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
                                                 item.text,
                                                 fontSize = 12.sp,
-                                                color = LinkedInTextBlack,
+                                                color = DrinkinTextBlack,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f)
@@ -1241,7 +1241,7 @@ fun WebDashboardScreen(
                         elevation = 1.dp
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Drinkers in Your Group", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold, color = LinkedInTextBlack)
+                            Text("Drinkers in Your Group", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
                             Spacer(modifier = Modifier.height(12.dp))
 
                             suggestions.take(3).forEach { user ->
@@ -1250,15 +1250,15 @@ fun WebDashboardScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Box(
-                                        modifier = Modifier.size(28.dp).background(LinkedInBlue.copy(alpha = 0.05f), shape = CircleShape),
+                                        modifier = Modifier.size(28.dp).background(DrinkinAccentBlue.copy(alpha = 0.05f), shape = CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Icon(Icons.Default.Person, contentDescription = null, tint = LinkedInBlue, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(16.dp))
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(user.first, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                        Text(user.second, color = LinkedInMutedGray, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(user.second, color = DrinkinMutedGray, fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                 }
                             }
@@ -1274,7 +1274,7 @@ fun WebDashboardScreen(
                 onDismissRequest = { showStartPostModal = false },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Share Drink Review update", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = LinkedInTextBlack)
+                        Text("Share Drink Review update", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DrinkinTextBlack)
                     }
                 },
                 text = {
@@ -1307,7 +1307,7 @@ fun WebDashboardScreen(
                         )
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Category:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = LinkedInMutedGray)
+                            Text("Category:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = DrinkinMutedGray)
                             Spacer(modifier = Modifier.width(12.dp))
                             RadioButton(
                                 selected = category == DrinkCategory.ALCOHOLIC,
@@ -1330,7 +1330,7 @@ fun WebDashboardScreen(
                         )
 
                         Column {
-                            Text("Your Rating (Optional)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = LinkedInMutedGray)
+                            Text("Your Rating (Optional)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = DrinkinMutedGray)
                             Row {
                                 for (i in 1..5) {
                                     Icon(
@@ -1370,7 +1370,7 @@ fun WebDashboardScreen(
                             horizontalArrangement = Arrangement.End
                         ) {
                             TextButton(onClick = { showStartPostModal = false }) {
-                                Text("Cancel", color = LinkedInMutedGray)
+                                Text("Cancel", color = DrinkinMutedGray)
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             Button(
@@ -1403,7 +1403,7 @@ fun WebDashboardScreen(
                                         }
                                     }
                                 },
-                                colors = ButtonDefaults.buttonColors(backgroundColor = LinkedInBlue),
+                                colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue),
                                 enabled = postText.isNotBlank()
                             ) {
                                 Text("Post update", color = Color.White, fontWeight = FontWeight.Bold)
@@ -1418,7 +1418,7 @@ fun WebDashboardScreen(
 }
 
 @Composable
-fun WebLinkedInPostCard(
+fun WebPostCard(
     post: Post,
     isLiked: Boolean,
     likeCount: Int,
@@ -1432,7 +1432,7 @@ fun WebLinkedInPostCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         elevation = 1.dp,
-        backgroundColor = LinkedInCardBackground
+        backgroundColor = DrinkinCardBackground
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Author row
@@ -1440,38 +1440,38 @@ fun WebLinkedInPostCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(LinkedInBlue.copy(alpha = 0.1f), shape = CircleShape),
+                        .background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = LinkedInBlue)
+                    Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue)
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column {
-                    Text(post.author.displayName ?: post.author.username, fontWeight = FontWeight.Bold, color = LinkedInTextBlack, fontSize = 14.sp)
-                    Text("Beverage Aficionado • @${post.author.username}", color = LinkedInMutedGray, fontSize = 11.sp)
-                    Text(post.createdAt.take(10), color = LinkedInMutedGray, fontSize = 10.sp)
+                    Text(post.author.displayName ?: post.author.username, fontWeight = FontWeight.Bold, color = DrinkinTextBlack, fontSize = 14.sp)
+                    Text("Beverage Aficionado • @${post.author.username}", color = DrinkinMutedGray, fontSize = 11.sp)
+                    Text(post.createdAt.take(10), color = DrinkinMutedGray, fontSize = 10.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Post content text
-            Text(post.text, color = LinkedInTextBlack, style = MaterialTheme.typography.body2, lineHeight = 20.sp)
+            Text(post.text, color = DrinkinTextBlack, style = MaterialTheme.typography.body2, lineHeight = 20.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
             // Badges row
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .background(LinkedInBlue.copy(alpha = 0.08f), shape = RoundedCornerShape(4.dp))
+                        .background(DrinkinAccentBlue.copy(alpha = 0.08f), shape = RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         post.drinkCategory.name,
                         style = MaterialTheme.typography.caption,
-                        color = LinkedInBlue,
+                        color = DrinkinAccentBlue,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -1503,14 +1503,14 @@ fun WebLinkedInPostCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(LinkedInLightGray, shape = RoundedCornerShape(4.dp))
+                        .background(DrinkinLightGray, shape = RoundedCornerShape(4.dp))
                         .padding(8.dp)
                 ) {
                     if (!post.tastingNotes.isNullOrEmpty()) {
-                        Text("Notes: ${post.tastingNotes}", fontSize = 11.sp, color = LinkedInTextBlack)
+                        Text("Notes: ${post.tastingNotes}", fontSize = 11.sp, color = DrinkinTextBlack)
                     }
                     if (!post.scenario.isNullOrEmpty()) {
-                        Text("Scenario: ${post.scenario}", fontSize = 11.sp, color = LinkedInTextBlack)
+                        Text("Scenario: ${post.scenario}", fontSize = 11.sp, color = DrinkinTextBlack)
                     }
                 }
             }
@@ -1524,14 +1524,14 @@ fun WebLinkedInPostCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.ThumbUp, contentDescription = null, tint = LinkedInBlue, modifier = Modifier.size(12.dp))
+                    Icon(Icons.Default.ThumbUp, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(12.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("$likeCount", color = LinkedInMutedGray, fontSize = 11.sp)
+                    Text("$likeCount", color = DrinkinMutedGray, fontSize = 11.sp)
                 }
-                Text("${post.commentCount} comments", color = LinkedInMutedGray, fontSize = 11.sp)
+                Text("${post.commentCount} comments", color = DrinkinMutedGray, fontSize = 11.sp)
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp), color = LinkedInBorderColor, thickness = 0.5.dp)
+            Divider(modifier = Modifier.padding(vertical = 8.dp), color = DrinkinBorderColor, thickness = 0.5.dp)
 
             // Dynamic Action bar
             Row(
@@ -1549,11 +1549,11 @@ fun WebLinkedInPostCard(
                     Icon(
                         imageVector = Icons.Default.ThumbUp,
                         contentDescription = "Like",
-                        tint = if (isLiked) LinkedInBlue else LinkedInMutedGray,
+                        tint = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Like", color = if (isLiked) LinkedInBlue else LinkedInMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    Text("Like", color = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 }
 
                 // Comment Toggle Button
@@ -1565,7 +1565,7 @@ fun WebLinkedInPostCard(
                 ) {
                     Text("💬", fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Comment", color = LinkedInMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    Text("Comment", color = DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 }
 
                 // Save Toggle Button
@@ -1578,18 +1578,18 @@ fun WebLinkedInPostCard(
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = "Save",
-                        tint = if (isSaved) LinkedInBlue else LinkedInMutedGray,
+                        tint = if (isSaved) DrinkinAccentBlue else DrinkinMutedGray,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isSaved) "Saved" else "Save", color = if (isSaved) LinkedInBlue else LinkedInMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    Text(if (isSaved) "Saved" else "Save", color = if (isSaved) DrinkinAccentBlue else DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                 }
             }
 
             // Inline expandable comment section
             if (showComments) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Divider(color = LinkedInBorderColor, thickness = 0.5.dp)
+                Divider(color = DrinkinBorderColor, thickness = 0.5.dp)
                 Spacer(modifier = Modifier.height(12.dp))
 
                 var localCommentInput by remember { mutableStateOf("") }
@@ -1618,7 +1618,7 @@ fun WebLinkedInPostCard(
                                     localCommentInput = ""
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = LinkedInBlue),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue),
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.height(32.dp),
                             enabled = localCommentInput.isNotBlank()
@@ -1634,13 +1634,13 @@ fun WebLinkedInPostCard(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(LinkedInLightGray, shape = RoundedCornerShape(8.dp))
+                                .background(DrinkinLightGray, shape = RoundedCornerShape(8.dp))
                                 .padding(10.dp)
                         ) {
                             Column {
                                 Text(comment.first, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(comment.second, fontSize = 12.sp, color = LinkedInTextBlack)
+                                Text(comment.second, fontSize = 12.sp, color = DrinkinTextBlack)
                             }
                         }
                     }

@@ -214,7 +214,8 @@ fun PostCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = 4.dp
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+        elevation = 1.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Header: Author details

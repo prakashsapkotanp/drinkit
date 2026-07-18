@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import app.drinkin.shared.api.DrinkinApiClient
+import app.drinkin.android.theme.DrinkinTheme
 
 enum class AppScreen { LOGIN, REGISTER, FEED, CREATE_POST }
 
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
             // Simple key to force refresh feed when navigating back
             var feedRefreshTrigger by remember { mutableStateOf(0) }
 
-            MaterialTheme {
+            DrinkinTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     when (currentScreen) {
                         AppScreen.LOGIN -> {
