@@ -1,15 +1,16 @@
 package app.drinkin.android
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.Post
@@ -19,6 +20,11 @@ import kotlinx.coroutines.launch
 fun FeedScreen(
     apiClient: DrinkinApiClient,
     onNavigateToCreatePost: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToSearch: () -> Unit,
+    onNavigateToConnections: () -> Unit,
+    onNavigateToChat: () -> Unit,
+    onNavigateToOtherProfile: (userId: String) -> Unit,
     onLogout: () -> Unit
 ) {
     var posts by remember { mutableStateOf<List<Post>>(emptyList()) }
@@ -79,8 +85,20 @@ fun FeedScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Drinkin' Feed") },
+                title = { Text("Drinkin'") },
                 actions = {
+                    IconButton(onClick = onNavigateToSearch) {
+                        Icon(Icons.Default.Search, contentDescription = "Search Users")
+                    }
+                    IconButton(onClick = onNavigateToConnections) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Connections")
+                    }
+                    IconButton(onClick = onNavigateToChat) {
+                        Icon(Icons.Default.Send, contentDescription = "Chat")
+                    }
+                    IconButton(onClick = onNavigateToProfile) {
+                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                    }
                     TextButton(onClick = onLogout) {
                         Text("Logout", color = MaterialTheme.colors.onPrimary)
                     }
@@ -156,6 +174,7 @@ fun FeedScreen(
                             post = post,
                             isLiked = isLiked,
                             likeCount = displayedLikeCount,
+                            onAuthorClick = { onNavigateToOtherProfile(post.author.id) },
                             onLikeToggle = {
                                 coroutineScope.launch {
                                     val newIsLiked = !isLiked
@@ -210,6 +229,7 @@ fun PostCard(
     post: Post,
     isLiked: Boolean,
     likeCount: Int,
+    onAuthorClick: () -> Unit,
     onLikeToggle: () -> Unit
 ) {
     Card(
@@ -218,16 +238,23 @@ fun PostCard(
         elevation = 1.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Author details
-            Text(
-                text = post.author.displayName ?: post.author.username,
-                style = MaterialTheme.typography.subtitle1
-            )
-            Text(
-                text = "@${post.author.username} • ${post.createdAt.take(10)}",
-                style = MaterialTheme.typography.caption,
-                color = LocalContentColor.current.copy(alpha = 0.6f)
-            )
+            // Header: Author details (clickable)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onAuthorClick() }
+            ) {
+                Text(
+                    text = post.author.displayName ?: post.author.username,
+                    style = MaterialTheme.typography.subtitle1,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "@${post.author.username} • ${post.createdAt.take(10)}",
+                    style = MaterialTheme.typography.caption,
+                    color = LocalContentColor.current.copy(alpha = 0.6f)
+                )
+            }
             Spacer(modifier = Modifier.height(8.dp))
 
             // Body: Text and properties
