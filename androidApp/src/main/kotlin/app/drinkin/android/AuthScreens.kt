@@ -1,6 +1,8 @@
 package app.drinkin.android
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -9,10 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.LoginRequest
 import app.drinkin.shared.model.RegisterRequest
@@ -84,80 +88,122 @@ fun LoginScreen(
         }
     }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Login to Drinkin'") }) }
-    ) { padding ->
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(24.dp),
+            shape = RoundedCornerShape(8.dp),
+            elevation = 2.dp
         ) {
-            TextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                    errorMsg = null
-                },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Next,
-                    keyboardType = KeyboardType.Email
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                    errorMsg = null
-                },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Done,
-                    keyboardType = KeyboardType.Password
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        if (email.isNotBlank() && password.isNotBlank() && !isLoading) {
-                            performLogin()
-                        }
-                    }
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            errorMsg?.let {
-                Text(it, color = MaterialTheme.colors.error)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            if (isLoading) {
-                CircularProgressIndicator()
-            } else {
-                Button(
-                    onClick = { performLogin() },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = email.isNotBlank() && password.isNotBlank()
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Logo Row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 ) {
-                    Text("Login")
+                    Text(
+                        "Drinkin",
+                        style = MaterialTheme.typography.h5,
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colors.primary,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            "In",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Welcome to your drink experience network",
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f)
+                )
 
-            TextButton(onClick = onNavigateToRegister) {
-                Text("Don't have an account? Register here")
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        errorMsg = null
+                    },
+                    label = { Text("Email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                        keyboardType = KeyboardType.Email
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+                )
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        errorMsg = null
+                    },
+                    label = { Text("Password (8+ characters)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done,
+                        keyboardType = KeyboardType.Password
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (email.isNotBlank() && password.isNotBlank() && !isLoading) {
+                                performLogin()
+                            }
+                        }
+                    )
+                )
+
+                errorMsg?.let {
+                    Text(it, color = MaterialTheme.colors.error, style = MaterialTheme.typography.caption)
+                }
+
+                if (isLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colors.primary)
+                } else {
+                    Button(
+                        onClick = { performLogin() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary),
+                        shape = RoundedCornerShape(24.dp),
+                        enabled = email.isNotBlank() && password.isNotBlank()
+                    ) {
+                        Text("Sign In", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                TextButton(onClick = onNavigateToRegister) {
+                    Text("Join now", color = MaterialTheme.colors.primary, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }
@@ -233,116 +279,156 @@ fun RegisterScreen(
         }
     }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Create Drinkin' Account") }) }
-    ) { padding ->
-        Column(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(24.dp),
+            shape = RoundedCornerShape(8.dp),
+            elevation = 2.dp
         ) {
-            TextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                    errorMsg = null
-                },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Next,
-                    keyboardType = KeyboardType.Email
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextField(
-                value = username,
-                onValueChange = {
-                    username = it
-                    errorMsg = null
-                },
-                label = { Text("Username (3-50 chars)") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Next,
-                    keyboardType = KeyboardType.Text
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextField(
-                value = password,
-                onValueChange = {
-                    password = it
-                    errorMsg = null
-                },
-                label = { Text("Password (8+ chars)") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Next,
-                    keyboardType = KeyboardType.Password
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextField(
-                value = dob,
-                onValueChange = {
-                    dob = it
-                    errorMsg = null
-                },
-                label = { Text("Date of Birth (YYYY-MM-DD)") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    imeAction = ImeAction.Done,
-                    keyboardType = KeyboardType.Text
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        focusManager.clearFocus()
-                        if (email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank() && !isLoading) {
-                            performRegister()
-                        }
-                    }
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            errorMsg?.let {
-                Text(it, color = MaterialTheme.colors.error)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            if (isLoading) {
-                CircularProgressIndicator()
-            } else {
-                Button(
-                    onClick = { performRegister() },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank()
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Logo Row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 ) {
-                    Text("Register")
+                    Text(
+                        "Drinkin",
+                        style = MaterialTheme.typography.h5,
+                        color = MaterialTheme.colors.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colors.primary,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            "In",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Join the professional drink network",
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f)
+                )
 
-            TextButton(onClick = onNavigateToLogin) {
-                Text("Already have an account? Login here")
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = {
+                        email = it
+                        errorMsg = null
+                    },
+                    label = { Text("Email") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                        keyboardType = KeyboardType.Email
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+                )
+
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = {
+                        username = it
+                        errorMsg = null
+                    },
+                    label = { Text("Username") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                        keyboardType = KeyboardType.Text
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+                )
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = {
+                        password = it
+                        errorMsg = null
+                    },
+                    label = { Text("Password (8+ chars)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                        keyboardType = KeyboardType.Password
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                    )
+                )
+
+                OutlinedTextField(
+                    value = dob,
+                    onValueChange = {
+                        dob = it
+                        errorMsg = null
+                    },
+                    label = { Text("Date of Birth (YYYY-MM-DD)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done,
+                        keyboardType = KeyboardType.Text
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            if (email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank() && !isLoading) {
+                                performRegister()
+                            }
+                        }
+                    )
+                )
+
+                errorMsg?.let {
+                    Text(it, color = MaterialTheme.colors.error, style = MaterialTheme.typography.caption)
+                }
+
+                if (isLoading) {
+                    CircularProgressIndicator(color = MaterialTheme.colors.primary)
+                } else {
+                    Button(
+                        onClick = { performRegister() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.primary),
+                        shape = RoundedCornerShape(24.dp),
+                        enabled = email.isNotBlank() && username.isNotBlank() && password.isNotBlank() && dob.isNotBlank()
+                    ) {
+                        Text("Agree & Join", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 4.dp))
+
+                TextButton(onClick = onNavigateToLogin) {
+                    Text("Already on DrinkinIn? Sign in", color = MaterialTheme.colors.primary, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

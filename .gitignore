@@ -18,5 +18,7 @@ out/
 .DS_Store
 Thumbs.db
 
-# Kotlin JS/Wasm
+# Kotlin JS/Wasm/Multiplatform
 .kotlin/
+kotlin-js-store/
+!kotlin-js-store/yarn.lock
