@@ -106,6 +106,21 @@ paths:
         '404':
           description: User not found
 
+  /users/{id}/posts:
+    get:
+      tags: [Users]
+      summary: Get posts created by a specific user
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Paginated user posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostPage'
+
   /users/{id}/follow:
     post:
       tags: [Social]

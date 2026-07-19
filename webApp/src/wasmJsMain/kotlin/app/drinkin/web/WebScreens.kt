@@ -459,6 +459,11 @@ fun WebDashboardScreen(
     var viewingOtherUserId by remember { mutableStateOf<String?>(null) }
     var otherUserProfile by remember { mutableStateOf<UserProfile?>(null) }
     var isOtherProfileLoading by remember { mutableStateOf(false) }
+    var otherUserPosts by remember { mutableStateOf<List<Post>>(emptyList()) }
+    var isOtherUserPostsLoading by remember { mutableStateOf(false) }
+
+    // Logged-in user ID
+    var myUserId by remember { mutableStateOf<String?>(null) }
 
     // Dynamic Connections and Pending requests list
     var pendingConnections by remember { mutableStateOf<List<PendingConnectionRequest>>(emptyList()) }
@@ -479,6 +484,9 @@ fun WebDashboardScreen(
         hasMore = true
         coroutineScope.launch {
             try {
+                val myProfile = apiClient.getUserProfile("me")
+                myUserId = myProfile.id
+
                 val page = apiClient.getFeed(cursor = null)
                 posts = page.items
                 nextCursor = page.nextCursor
@@ -539,15 +547,21 @@ fun WebDashboardScreen(
         }
     }
 
-    fun loadOtherUserProfile(userId: String) {
+    fun loadOtherUserProfileAndPosts(userId: String) {
         isOtherProfileLoading = true
         coroutineScope.launch {
             try {
-                otherUserProfile = apiClient.getUserProfile(userId)
+                val profile = apiClient.getUserProfile(userId)
+                otherUserProfile = profile
+
+                isOtherUserPostsLoading = true
+                val postsPage = apiClient.getUserPosts(profile.id)
+                otherUserPosts = postsPage.items
             } catch (e: Exception) {
                 // Ignore
             } finally {
                 isOtherProfileLoading = false
+                isOtherUserPostsLoading = false
             }
         }
     }
@@ -636,7 +650,7 @@ fun WebDashboardScreen(
                                                 .fillMaxWidth()
                                                 .clickable {
                                                     viewingOtherUserId = result.id
-                                                    loadOtherUserProfile(result.id)
+                                                    loadOtherUserProfileAndPosts(result.id)
                                                     searchInput = ""
                                                     searchResults = emptyList()
                                                 }
@@ -758,126 +772,172 @@ fun WebDashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     if (viewingOtherUserId != null) {
-                        // Render Other User's Profile view
+                        // Render User's Profile view (Can be me or other)
                         if (isOtherProfileLoading) {
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally), color = DrinkinAccentBlue)
                         } else otherUserProfile?.let { profile ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
+                            val isMe = profile.id == myUserId
+
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier.size(72.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(44.dp))
-                                        }
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Column {
-                                            Text(profile.displayName ?: profile.username, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
-                                            Text("@${profile.username}", color = DrinkinMutedGray, fontSize = 13.sp)
-                                        }
-                                        Spacer(modifier = Modifier.weight(1f))
-                                        IconButton(onClick = { viewingOtherUserId = null }) {
-                                            Icon(Icons.Default.Close, contentDescription = "Close Profile")
+                                item {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box(
+                                                    modifier = Modifier.size(72.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(44.dp))
+                                                }
+                                                Spacer(modifier = Modifier.width(16.dp))
+                                                Column {
+                                                    Text(if (isMe) "My Profile" else (profile.displayName ?: profile.username), style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+                                                    Text("@${profile.username}", color = DrinkinMutedGray, fontSize = 13.sp)
+                                                }
+                                                Spacer(modifier = Modifier.weight(1f))
+                                                IconButton(onClick = { viewingOtherUserId = null }) {
+                                                    Icon(Icons.Default.Close, contentDescription = "Close Profile")
+                                                }
+                                            }
+
+                                            Divider()
+
+                                            Text(profile.bio ?: "No bio provided.", style = MaterialTheme.typography.body2)
+
+                                            Divider()
+
+                                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                                Text("${profile.followerCount} Followers")
+                                                Text("${profile.followingCount} Following")
+                                            }
+
+                                            Divider()
+
+                                            // Hide connection status actions entirely if viewing our own profile!
+                                            if (!isMe) {
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                                    when (profile.connectionStatus) {
+                                                        "NONE", null -> {
+                                                            Button(
+                                                                onClick = {
+                                                                    coroutineScope.launch {
+                                                                        try {
+                                                                            apiClient.sendConnectionRequest(ConnectionRequest(addresseeId = profile.id))
+                                                                            loadOtherUserProfileAndPosts(profile.id)
+                                                                        } catch (e: Exception) {}
+                                                                    }
+                                                                },
+                                                                colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue)
+                                                            ) {
+                                                                Text("Connect", color = Color.White)
+                                                            }
+                                                        }
+                                                        "PENDING_SENT" -> {
+                                                            Button(onClick = {}, enabled = false) {
+                                                                Text("Request Pending")
+                                                            }
+                                                        }
+                                                        "PENDING_RECEIVED" -> {
+                                                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                                                Button(
+                                                                    onClick = {
+                                                                        coroutineScope.launch {
+                                                                            try {
+                                                                                val list = apiClient.getPendingRequests().items
+                                                                                val match = list.firstOrNull { it.requester.id == profile.id }
+                                                                                if (match != null) {
+                                                                                    apiClient.acceptConnection(match.id)
+                                                                                    loadOtherUserProfileAndPosts(profile.id)
+                                                                                }
+                                                                            } catch (e: Exception) {}
+                                                                        }
+                                                                    },
+                                                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF2E7D32))
+                                                                ) {
+                                                                    Text("Accept", color = Color.White)
+                                                                }
+
+                                                                Button(
+                                                                    onClick = {
+                                                                        coroutineScope.launch {
+                                                                            try {
+                                                                                val list = apiClient.getPendingRequests().items
+                                                                                val match = list.firstOrNull { it.requester.id == profile.id }
+                                                                                if (match != null) {
+                                                                                    apiClient.rejectConnection(match.id)
+                                                                                    loadOtherUserProfileAndPosts(profile.id)
+                                                                                }
+                                                                            } catch (e: Exception) {}
+                                                                        }
+                                                                    },
+                                                                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828))
+                                                                ) {
+                                                                    Text("Reject", color = Color.White)
+                                                                }
+                                                            }
+                                                        }
+                                                        "CONNECTED" -> {
+                                                            Button(
+                                                                onClick = {
+                                                                    coroutineScope.launch {
+                                                                        try {
+                                                                            val conv = apiClient.getOrCreateConversation(ConversationRequest(otherUserId = profile.id))
+                                                                            selectedConversationId = conv.id
+                                                                            viewingOtherUserId = null
+                                                                            onTabChange(DashboardTab.CHAT)
+                                                                        } catch (e: Exception) {}
+                                                                    }
+                                                                },
+                                                                colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue)
+                                                            ) {
+                                                                Text("Message", color = Color.White)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
+                                }
 
-                                    Divider()
+                                item {
+                                    Text(
+                                        text = if (isMe) "My Recent Activity" else "Recent Activity",
+                                        style = MaterialTheme.typography.subtitle1,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(top = 16.dp)
+                                    )
+                                }
 
-                                    Text(profile.bio ?: "No bio provided.", style = MaterialTheme.typography.body2)
-
-                                    Divider()
-
-                                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        Text("${profile.followerCount} Followers")
-                                        Text("${profile.followingCount} Following")
+                                if (isOtherUserPostsLoading) {
+                                    item {
+                                        CircularProgressIndicator(modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally), color = DrinkinAccentBlue)
                                     }
-
-                                    Divider()
-
-                                    // Dynamic action button based on connectionStatus
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                        when (profile.connectionStatus) {
-                                            "NONE", null -> {
-                                                Button(
-                                                    onClick = {
-                                                        coroutineScope.launch {
-                                                            try {
-                                                                apiClient.sendConnectionRequest(ConnectionRequest(addresseeId = profile.id))
-                                                                loadOtherUserProfile(profile.id)
-                                                            } catch (e: Exception) {}
-                                                        }
-                                                    },
-                                                    colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue)
-                                                ) {
-                                                    Text("Connect", color = Color.White)
-                                                }
-                                            }
-                                            "PENDING_SENT" -> {
-                                                Button(onClick = {}, enabled = false) {
-                                                    Text("Request Pending")
-                                                }
-                                            }
-                                            "PENDING_RECEIVED" -> {
-                                                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                                    Button(
-                                                        onClick = {
-                                                            coroutineScope.launch {
-                                                                try {
-                                                                    val list = apiClient.getPendingRequests().items
-                                                                    val match = list.firstOrNull { it.requester.id == profile.id }
-                                                                    if (match != null) {
-                                                                        apiClient.acceptConnection(match.id)
-                                                                        loadOtherUserProfile(profile.id)
-                                                                    }
-                                                                } catch (e: Exception) {}
-                                                            }
-                                                        },
-                                                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF2E7D32))
-                                                    ) {
-                                                        Text("Accept", color = Color.White)
-                                                    }
-
-                                                    Button(
-                                                        onClick = {
-                                                            coroutineScope.launch {
-                                                                try {
-                                                                    val list = apiClient.getPendingRequests().items
-                                                                    val match = list.firstOrNull { it.requester.id == profile.id }
-                                                                    if (match != null) {
-                                                                        apiClient.rejectConnection(match.id)
-                                                                        loadOtherUserProfile(profile.id)
-                                                                    }
-                                                                } catch (e: Exception) {}
-                                                            }
-                                                        },
-                                                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828))
-                                                    ) {
-                                                        Text("Reject", color = Color.White)
-                                                    }
-                                                }
-                                            }
-                                            "CONNECTED" -> {
-                                                Button(
-                                                    onClick = {
-                                                        coroutineScope.launch {
-                                                            try {
-                                                                val conv = apiClient.getOrCreateConversation(ConversationRequest(otherUserId = profile.id))
-                                                                selectedConversationId = conv.id
-                                                                viewingOtherUserId = null
-                                                                onTabChange(DashboardTab.CHAT)
-                                                            } catch (e: Exception) {}
-                                                        }
-                                                    },
-                                                    colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue)
-                                                ) {
-                                                    Text("Message", color = Color.White)
-                                                }
+                                } else if (otherUserPosts.isEmpty()) {
+                                    item {
+                                        Card(modifier = Modifier.fillMaxWidth()) {
+                                            Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                                                Text("No drink reviews posted yet.", style = MaterialTheme.typography.caption, color = DrinkinMutedGray)
                                             }
                                         }
+                                    }
+                                } else {
+                                    items(otherUserPosts) { post ->
+                                        WebPostCard(
+                                            post = post,
+                                            isLiked = false,
+                                            likeCount = post.likeCount,
+                                            onAuthorClick = {},
+                                            onLikeToggle = {},
+                                            isSaved = false,
+                                            onSaveToggle = {}
+                                        )
                                     }
                                 }
                             }
@@ -945,7 +1005,7 @@ fun WebDashboardScreen(
                                                 likeCount = displayedLikeCount,
                                                 onAuthorClick = {
                                                     viewingOtherUserId = post.author.id
-                                                    loadOtherUserProfile(post.author.id)
+                                                    loadOtherUserProfileAndPosts(post.author.id)
                                                 },
                                                 onLikeToggle = {
                                                     coroutineScope.launch {
@@ -1046,7 +1106,7 @@ fun WebDashboardScreen(
                                                     .fillMaxWidth()
                                                     .clickable {
                                                         viewingOtherUserId = conn.id
-                                                        loadOtherUserProfile(conn.id)
+                                                        loadOtherUserProfileAndPosts(conn.id)
                                                     }
                                                     .padding(vertical = 8.dp),
                                                 verticalAlignment = Alignment.CenterVertically
@@ -1140,7 +1200,6 @@ fun WebDashboardScreen(
                                                     modifier = Modifier.weight(1f).fillMaxWidth().padding(16.dp),
                                                     verticalArrangement = Arrangement.spacedBy(12.dp)
                                                 ) {
-                                                    // Reverse chronological layout or list items, let's reverse to show at bottom
                                                     items(realMessages.reversed()) { msg ->
                                                         val isMe = msg.senderId != activeConv.otherUser.id
                                                         val align = if (isMe) Alignment.End else Alignment.Start
@@ -1213,7 +1272,7 @@ fun WebDashboardScreen(
                                             likeCount = post.likeCount,
                                             onAuthorClick = {
                                                 viewingOtherUserId = post.author.id
-                                                loadOtherUserProfile(post.author.id)
+                                                loadOtherUserProfileAndPosts(post.author.id)
                                             },
                                             onLikeToggle = {},
                                             isSaved = true,
@@ -1333,7 +1392,198 @@ fun WebDashboardScreen(
                         }
                     }
                 }
+
+                // RIGHT COLUMN: Recommendations / Saved Posts quick panel
+                Column(
+                    modifier = Modifier.width(250.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        elevation = 1.dp
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Saved Experience Cards", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            if (savedPosts.isEmpty()) {
+                                Text("No saved reviews. Bookmark posts to quickly access them here.", fontSize = 12.sp, color = DrinkinMutedGray)
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    savedPosts.take(4).forEach { item ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { onTabChange(DashboardTab.SAVED) }
+                                                .padding(vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Default.Star, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                item.text,
+                                                fontSize = 12.sp,
+                                                color = DrinkinTextBlack,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
+        }
+
+        // START A POST MODAL DIALOG
+        if (showStartPostModal) {
+            AlertDialog(
+                onDismissRequest = { showStartPostModal = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Share Drink Review update", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = DrinkinTextBlack)
+                    }
+                },
+                text = {
+                    var postText by remember { mutableStateOf("") }
+                    var category by remember { mutableStateOf(DrinkCategory.ALCOHOLIC) }
+                    var type by remember { mutableStateOf("") }
+                    var starsRating by remember { mutableStateOf<Int?>(null) }
+                    var notes by remember { mutableStateOf("") }
+                    var scenarioTag by remember { mutableStateOf("") }
+                    var inlineError by remember { mutableStateOf<String?>(null) }
+
+                    val modalScrollState = rememberScrollState()
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp)
+                            .verticalScroll(modalScrollState),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = postText,
+                            onValueChange = {
+                                postText = it
+                                inlineError = null
+                            },
+                            placeholder = { Text("What drink are you tasting right now? Share details...", fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth().height(100.dp),
+                            maxLines = 4
+                        )
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Category:", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = DrinkinMutedGray)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            RadioButton(
+                                selected = category == DrinkCategory.ALCOHOLIC,
+                                onClick = { category = DrinkCategory.ALCOHOLIC }
+                            )
+                            Text("Alcoholic", fontSize = 12.sp, modifier = Modifier.clickable { category = DrinkCategory.ALCOHOLIC })
+                            Spacer(modifier = Modifier.width(12.dp))
+                            RadioButton(
+                                selected = category == DrinkCategory.NON_ALCOHOLIC,
+                                onClick = { category = DrinkCategory.NON_ALCOHOLIC }
+                            )
+                            Text("Non-Alcoholic", fontSize = 12.sp, modifier = Modifier.clickable { category = DrinkCategory.NON_ALCOHOLIC })
+                        }
+
+                        OutlinedTextField(
+                            value = type,
+                            onValueChange = { type = it },
+                            placeholder = { Text("Drink type (e.g. Porter, Espresso) - Optional", fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Column {
+                            Text("Your Rating (Optional)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = DrinkinMutedGray)
+                            Row {
+                                for (i in 1..5) {
+                                    Icon(
+                                        imageVector = if (starsRating != null && starsRating!! >= i) Icons.Default.Star else Icons.Outlined.Star,
+                                        contentDescription = "Star $i",
+                                        tint = if (starsRating != null && starsRating!! >= i) Color(0xFFF1C40F) else LocalContentColor.current.copy(alpha = 0.4f),
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clickable { starsRating = if (starsRating == i) null else i }
+                                    )
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = notes,
+                            onValueChange = { notes = it },
+                            placeholder = { Text("Tasting Notes (e.g. Oaky, Sweet) - Optional", fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedTextField(
+                            value = scenarioTag,
+                            onValueChange = { scenarioTag = it },
+                            placeholder = { Text("Scenario (e.g. Celebration) - Optional", fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        inlineError?.let {
+                            Text(it, color = MaterialTheme.colors.error, style = MaterialTheme.typography.caption)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { showStartPostModal = false }) {
+                                Text("Cancel", color = DrinkinMutedGray)
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    if (postText.trim().isEmpty()) {
+                                        inlineError = "Post content cannot be empty."
+                                        return@Button
+                                    }
+                                    if (postText.length > 1000) {
+                                        inlineError = "Post must be under 1000 characters."
+                                        return@Button
+                                    }
+
+                                    coroutineScope.launch {
+                                        try {
+                                            apiClient.createPost(
+                                                CreatePostRequest(
+                                                    text = postText,
+                                                    drinkCategory = category,
+                                                    drinkType = type.takeIf { it.isNotBlank() },
+                                                    rating = starsRating,
+                                                    tastingNotes = notes.takeIf { it.isNotBlank() },
+                                                    scenario = scenarioTag.takeIf { it.isNotBlank() }
+                                                )
+                                            )
+                                            showStartPostModal = false
+                                            onForceFeedRefresh()
+                                        } catch (e: Exception) {
+                                            inlineError = "Failed to post. Please try again."
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue),
+                                enabled = postText.isNotBlank()
+                            ) {
+                                Text("Post update", color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                },
+                buttons = {}
+            )
         }
     }
 }
