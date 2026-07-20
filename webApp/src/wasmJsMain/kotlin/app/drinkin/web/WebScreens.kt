@@ -464,6 +464,7 @@ fun WebDashboardScreen(
 
     // Logged-in user ID
     var myUserId by remember { mutableStateOf<String?>(null) }
+    var myProfileState by remember { mutableStateOf<UserProfile?>(null) }
 
     // Dynamic Connections and Pending requests list
     var pendingConnections by remember { mutableStateOf<List<PendingConnectionRequest>>(emptyList()) }
@@ -486,6 +487,8 @@ fun WebDashboardScreen(
             try {
                 val myProfile = apiClient.getUserProfile("me")
                 myUserId = myProfile.id
+                myProfileState = myProfile
+                onUserAboutChange(myProfile.bio ?: "")
 
                 val page = apiClient.getFeed(cursor = null)
                 posts = page.items
@@ -744,8 +747,8 @@ fun WebDashboardScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            Text("Your Professional Profile", style = MaterialTheme.typography.subtitle1, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
-                            Text("Beverage Enthusiast", style = MaterialTheme.typography.caption, color = DrinkinMutedGray, textAlign = TextAlign.Center)
+                            Text(myProfileState?.displayName ?: myProfileState?.username ?: "Your Professional Profile", style = MaterialTheme.typography.subtitle1, fontWeight = FontWeight.Bold, color = DrinkinTextBlack)
+                            Text("@${myProfileState?.username ?: ""}", style = MaterialTheme.typography.caption, color = DrinkinMutedGray, textAlign = TextAlign.Center)
 
                             Divider(modifier = Modifier.padding(vertical = 12.dp))
 
@@ -761,7 +764,7 @@ fun WebDashboardScreen(
 
                             Text("About Me", style = MaterialTheme.typography.subtitle2, fontWeight = FontWeight.SemiBold, color = DrinkinTextBlack, modifier = Modifier.align(Alignment.Start))
                             Spacer(modifier = Modifier.height(4.dp))
-                            Text(userAboutText, fontSize = 12.sp, color = DrinkinMutedGray, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Start))
+                            Text(if (userAboutText.isBlank()) "No bio provided." else userAboutText, fontSize = 12.sp, color = DrinkinMutedGray, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.align(Alignment.Start))
                         }
                     }
                 }
@@ -797,7 +800,7 @@ fun WebDashboardScreen(
                                                 }
                                                 Spacer(modifier = Modifier.width(16.dp))
                                                 Column {
-                                                    Text(if (isMe) "My Profile" else (profile.displayName ?: profile.username), style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+                                                    Text(profile.displayName ?: profile.username, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
                                                     Text("@${profile.username}", color = DrinkinMutedGray, fontSize = 13.sp)
                                                 }
                                                 Spacer(modifier = Modifier.weight(1f))
@@ -908,7 +911,7 @@ fun WebDashboardScreen(
 
                                 item {
                                     Text(
-                                        text = if (isMe) "My Recent Activity" else "Recent Activity",
+                                        text = "Recent Activity",
                                         style = MaterialTheme.typography.subtitle1,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(top = 16.dp)
@@ -1323,8 +1326,8 @@ fun WebDashboardScreen(
                                             }
                                             Spacer(modifier = Modifier.width(16.dp))
                                             Column {
-                                                Text(if (editDisplayName.isNotBlank()) editDisplayName else "Professional User", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
-                                                Text("@username", color = DrinkinMutedGray, fontSize = 13.sp)
+                                                Text(if (editDisplayName.isNotBlank()) editDisplayName else (myProfileState?.username ?: "Professional User"), style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+                                                Text("@${myProfileState?.username ?: ""}", color = DrinkinMutedGray, fontSize = 13.sp)
                                             }
                                             Spacer(modifier = Modifier.weight(1f))
                                             OutlinedButton(
@@ -1333,7 +1336,7 @@ fun WebDashboardScreen(
                                                         // Call PUT /users/me
                                                         coroutineScope.launch {
                                                             try {
-                                                                apiClient.updateProfile(
+                                                                val updated = apiClient.updateProfile(
                                                                     UpdateProfileRequest(
                                                                         displayName = editDisplayName.takeIf { it.isNotBlank() },
                                                                         bio = editBio.takeIf { it.isNotBlank() },
@@ -1341,6 +1344,8 @@ fun WebDashboardScreen(
                                                                         drinkPreferences = editPrefs.split(",").map { it.trim() }.filter { it.isNotBlank() }
                                                                     )
                                                                 )
+                                                                myProfileState = updated
+                                                                onUserAboutChange(updated.bio ?: "")
                                                             } catch (e: Exception) {}
                                                         }
                                                     }
