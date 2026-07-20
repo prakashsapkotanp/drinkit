@@ -148,6 +148,29 @@ fun ProfileScreen(
                             elevation = 1.dp,
                             shape = RoundedCornerShape(8.dp)
                         ) {
+                            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .background(AppPrimaryBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = AppPrimaryBlue, modifier = Modifier.size(36.dp))
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Text(displayName.takeIf { it.isNotBlank() } ?: userProfile?.username ?: "", style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+                                Text("@${userProfile?.username ?: ""}", style = MaterialTheme.typography.caption, color = AppMutedGray)
+                            }
+                        }
+                    }
+
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = 1.dp,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Text("Personal Details", style = MaterialTheme.typography.subtitle1, fontWeight = FontWeight.Bold)
 
@@ -359,7 +382,7 @@ fun OtherProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isMe) "My Profile" else (userProfile?.displayName ?: userProfile?.username ?: "Profile")) },
+                title = { Text(userProfile?.displayName ?: userProfile?.username ?: "Profile") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -543,7 +566,7 @@ fun OtherProfileScreen(
                     // Recent Activity & Posts Card (LinkedIn style)
                     item {
                         Text(
-                            text = if (isMe) "My Recent Activity" else "Recent Activity",
+                            text = "Recent Activity",
                             style = MaterialTheme.typography.subtitle1,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 8.dp)
