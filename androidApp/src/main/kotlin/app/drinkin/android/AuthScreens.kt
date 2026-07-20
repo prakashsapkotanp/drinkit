@@ -144,11 +144,12 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = {
-                        email = it
+                        email = it.trim()
                         errorMsg = null
                     },
                     label = { Text("Email") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next,
                         keyboardType = KeyboardType.Email
@@ -161,11 +162,12 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
-                        password = it
+                        password = it.trim()
                         errorMsg = null
                     },
                     label = { Text("Password (8+ characters)") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done,
@@ -335,11 +337,12 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = {
-                        email = it
+                        email = it.trim()
                         errorMsg = null
                     },
                     label = { Text("Email") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next,
                         keyboardType = KeyboardType.Email
@@ -352,11 +355,12 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = username,
                     onValueChange = {
-                        username = it
+                        username = it.trim()
                         errorMsg = null
                     },
                     label = { Text("Username") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next,
                         keyboardType = KeyboardType.Text
@@ -369,11 +373,12 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = {
-                        password = it
+                        password = it.trim()
                         errorMsg = null
                     },
                     label = { Text("Password (8+ chars)") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Next,
@@ -387,11 +392,12 @@ fun RegisterScreen(
                 OutlinedTextField(
                     value = dob,
                     onValueChange = {
-                        dob = it
+                        dob = it.trim()
                         errorMsg = null
                     },
                     label = { Text("Date of Birth (YYYY-MM-DD)") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         imeAction = ImeAction.Done,
                         keyboardType = KeyboardType.Text
