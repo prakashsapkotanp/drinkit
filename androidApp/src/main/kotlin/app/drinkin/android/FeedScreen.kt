@@ -1,6 +1,7 @@
 package app.drinkin.android
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -10,10 +11,14 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.Post
+import io.ktor.client.request.get
+import io.ktor.client.call.body
 import kotlinx.coroutines.launch
 
 @Composable
@@ -310,6 +315,18 @@ fun PostCard(
                 }
             }
 
+            // Display Post Image if present
+            if (post.mediaUrls.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                NetworkImage(
+                    url = post.mediaUrls.first(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // Footer: Likes and Comments count
@@ -338,3 +355,46 @@ fun PostCard(
 
 // Inline helper for empty check on nullable strings
 private fun String?.isNull_or_empty(): Boolean = this == null || this.isEmpty()
+
+@Composable
+fun NetworkImage(url: String, modifier: Modifier = Modifier) {
+    var imageBitmap by remember(url) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(url) {
+        coroutineScope.launch {
+            try {
+                val fullUrl = if (url.startsWith("/")) {
+                    "http://10.0.2.2:8080$url"
+                } else {
+                    url
+                }
+                val client = io.ktor.client.HttpClient()
+                val response: io.ktor.client.statement.HttpResponse = client.get(fullUrl)
+                val bytes: ByteArray = response.body()
+                val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                if (bitmap != null) {
+                    imageBitmap = bitmap.asImageBitmap()
+                }
+            } catch (e: Exception) {
+                // Fail silently
+            }
+        }
+    }
+
+    if (imageBitmap != null) {
+        androidx.compose.foundation.Image(
+            bitmap = imageBitmap!!,
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+    } else {
+        Box(
+            modifier = modifier.background(MaterialTheme.colors.onSurface.copy(alpha = 0.08f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+        }
+    }
+}

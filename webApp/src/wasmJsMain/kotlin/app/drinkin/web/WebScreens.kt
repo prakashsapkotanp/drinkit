@@ -35,8 +35,16 @@ import androidx.compose.ui.unit.sp
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.*
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.request.get
+import io.ktor.client.call.body
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.skia.Image
+import org.jetbrains.skia.Bitmap
+import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.ExperimentalComposeUiApi
 
 // JS date helpers for wasmJs to get current local date components
 private fun getYearFromJs(): Int = js("new Date().getFullYear()")
@@ -66,6 +74,63 @@ fun isUnderage(dobString: String): Boolean {
         age < 18
     } catch (e: Exception) {
         true
+    }
+}
+
+private fun setBridgeToken(token: String): Unit =
+    js(" { var b = document.getElementById('upload-bridge'); if (!b) { b = document.createElement('div'); b.id = 'upload-bridge'; b.style.display = 'none'; document.body.appendChild(b); } b.setAttribute('data-token', token); } ")
+
+private fun triggerUploadJs(): Unit =
+    js("window.triggerImageUpload()")
+
+private fun getBridgeStatus(): String =
+    js(" (document.getElementById('upload-bridge') ? document.getElementById('upload-bridge').getAttribute('data-status') || 'idle' : 'idle') ")
+
+private fun getBridgeUrl(): String =
+    js(" (document.getElementById('upload-bridge') ? document.getElementById('upload-bridge').getAttribute('data-url') || '' : '') ")
+
+private fun getBridgeError(): String =
+    js(" (document.getElementById('upload-bridge') ? document.getElementById('upload-bridge').getAttribute('data-error') || '' : '') ")
+
+@Composable
+fun NetworkImage(url: String, modifier: Modifier = Modifier) {
+    var imageBitmap by remember(url) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(url) {
+        coroutineScope.launch {
+            try {
+                val fullUrl = if (url.startsWith("/")) {
+                    "http://localhost:8080$url"
+                } else {
+                    url
+                }
+                val client = io.ktor.client.HttpClient()
+                val response: io.ktor.client.statement.HttpResponse = client.get(fullUrl)
+                val bytes: ByteArray = response.body()
+                val skiaImage = org.jetbrains.skia.Image.makeFromEncoded(bytes)
+                val bitmap = org.jetbrains.skia.Bitmap.makeFromImage(skiaImage)
+                imageBitmap = bitmap.asComposeImageBitmap()
+            } catch (e: Exception) {
+                // Fail silently
+            }
+        }
+    }
+
+    if (imageBitmap != null) {
+        androidx.compose.foundation.Image(
+            bitmap = imageBitmap!!,
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+    } else {
+        Box(
+            modifier = modifier.background(Color.LightGray),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+        }
     }
 }
 
@@ -943,7 +1008,7 @@ fun WebDashboardScreen(
                                             isLiked = false,
                                             likeCount = post.likeCount,
                                             onAuthorClick = {},
-                                            onLikeToggle = {},
+                                            onLikeToggle = { _ -> },
                                             isSaved = false,
                                             onSaveToggle = {}
                                         )
@@ -1016,15 +1081,16 @@ fun WebDashboardScreen(
                                                     viewingOtherUserId = post.author.id
                                                     loadOtherUserProfileAndPosts(post.author.id)
                                                 },
-                                                onLikeToggle = {
+                                                onLikeToggle = { reactionType ->
                                                     coroutineScope.launch {
-                                                        val newIsLiked = !isLiked
+                                                        val isRemove = isLiked && reactionType == "LIKE"
+                                                        val newIsLiked = !isRemove
                                                         likedPostIds = if (newIsLiked) likedPostIds + post.id else likedPostIds - post.id
-                                                        likeCountOffsets = likeCountOffsets + (post.id to (if (newIsLiked) offset + 1 else offset - 1))
+                                                        likeCountOffsets = likeCountOffsets + (post.id to (if (newIsLiked) (if (isLiked) offset else offset + 1) else offset - 1))
 
                                                         try {
                                                             if (newIsLiked) {
-                                                                apiClient.likePost(post.id)
+                                                                apiClient.likePost(post.id, reactionType)
                                                             } else {
                                                                 apiClient.unlikePost(post.id)
                                                             }
@@ -1283,7 +1349,7 @@ fun WebDashboardScreen(
                                                 viewingOtherUserId = post.author.id
                                                 loadOtherUserProfileAndPosts(post.author.id)
                                             },
-                                            onLikeToggle = {},
+                                            onLikeToggle = { _ -> },
                                             isSaved = true,
                                             onSaveToggle = {
                                                 savedPosts.removeAll { it.id == post.id }
@@ -1599,16 +1665,19 @@ fun WebDashboardScreen(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun WebPostCard(
     post: Post,
     isLiked: Boolean,
     likeCount: Int,
     onAuthorClick: () -> Unit,
-    onLikeToggle: () -> Unit,
+    onLikeToggle: (String) -> Unit,
     isSaved: Boolean,
     onSaveToggle: () -> Unit
 ) {
+    var showReactions by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -1641,6 +1710,19 @@ fun WebPostCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(post.text, color = DrinkinTextBlack, style = MaterialTheme.typography.body2, lineHeight = 20.sp)
+
+            // Display Post Image if present
+            if (post.mediaUrls.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                NetworkImage(
+                    url = post.mediaUrls.first(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1676,18 +1758,62 @@ fun WebPostCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.clickable { onLikeToggle() }.padding(vertical = 4.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ThumbUp,
-                        contentDescription = "Like",
-                        tint = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Like ($likeCount)", color = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                Box(contentAlignment = Alignment.BottomStart) {
+                    Row(
+                        modifier = Modifier
+                            .onPointerEvent(PointerEventType.Enter) { showReactions = true }
+                            .onPointerEvent(PointerEventType.Exit) { showReactions = false }
+                            .clickable { onLikeToggle("LIKE") }
+                            .padding(vertical = 4.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ThumbUp,
+                            contentDescription = "Like",
+                            tint = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Like ($likeCount)", color = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    }
+
+                    if (showReactions) {
+                        Card(
+                            modifier = Modifier
+                                .padding(bottom = 32.dp)
+                                .onPointerEvent(PointerEventType.Enter) { showReactions = true }
+                                .onPointerEvent(PointerEventType.Exit) { showReactions = false }
+                                .border(0.5.dp, DrinkinBorderColor, shape = RoundedCornerShape(24.dp)),
+                            elevation = 6.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            backgroundColor = DrinkinCardBackground
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                val reactions = listOf(
+                                    "LIKE" to "👍",
+                                    "LOVE" to "❤️",
+                                    "CHEERS" to "🍻",
+                                    "WOW" to "😮",
+                                    "SAD" to "😢"
+                                )
+                                reactions.forEach { (type, emoji) ->
+                                    Text(
+                                        text = emoji,
+                                        fontSize = 18.sp,
+                                        modifier = Modifier
+                                            .clickable {
+                                                onLikeToggle(type)
+                                                showReactions = false
+                                            }
+                                            .padding(4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Row(

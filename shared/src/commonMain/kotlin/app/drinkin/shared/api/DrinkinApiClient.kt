@@ -58,11 +58,11 @@ class DrinkinApiClient(
             setBody(request)
         }.body()
 
-    suspend fun likePost(postId: String) {
+    suspend fun likePost(postId: String, reactionType: String = "LIKE") {
         client.post("$baseUrl/posts/$postId/reactions") {
             withAuth()
             contentType(ContentType.Application.Json)
-            setBody(ReactRequest(reactionType = "LIKE"))
+            setBody(ReactRequest(reactionType = reactionType))
         }
     }
 

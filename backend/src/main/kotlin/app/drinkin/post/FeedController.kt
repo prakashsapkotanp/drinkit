@@ -19,7 +19,8 @@ import java.util.UUID
 class FeedController(
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
-    private val followRepository: FollowRepository
+    private val followRepository: FollowRepository,
+    private val connectionRepository: app.drinkin.user.ConnectionRepository
 ) {
 
     private fun getCurrentUserId(): UUID? {
@@ -86,8 +87,9 @@ class FeedController(
             }
         }
 
+        val poolSize = 50
         val pageLimit = 10
-        val pageable = PageRequest.of(0, pageLimit + 1)
+        val pageable = PageRequest.of(0, poolSize)
         val posts = if (authorIds.size > 1) {
             postRepository.findFeedPosts(authorIds, parsedCursor, pageable)
         } else {
@@ -100,9 +102,42 @@ class FeedController(
             posts
         }
 
+        val scoredPosts = filteredPosts.map { post ->
+            var score = 0.0
+
+            // 1. Connection priority (+100.0 if author is a connection)
+            if (connectionRepository.areConnected(userId, post.author.id)) {
+                score += 100.0
+            }
+
+            // 2. Drink preferences similarity
+            user.drinkPreferences.forEach { pref ->
+                if (pref.isNotBlank()) {
+                    val p = pref.trim().lowercase()
+                    if (post.drinkType?.lowercase()?.contains(p) == true) {
+                        score += 50.0
+                    }
+                    if (post.tastingNotes?.lowercase()?.contains(p) == true) {
+                        score += 30.0
+                    }
+                    if (post.text.lowercase().contains(p)) {
+                        score += 20.0
+                    }
+                }
+            }
+
+            // 3. Reactions focus (+10.0 per reaction)
+            val totalReactions = post.reactionCounts.values.sum()
+            score += totalReactions * 10.0
+
+            post to score
+        }
+
+        val sortedScoredPosts = scoredPosts.sortedByDescending { it.second }.map { it.first }
+
         val hasNext = filteredPosts.size > pageLimit
-        val items = if (hasNext) filteredPosts.subList(0, pageLimit) else filteredPosts
-        val nextCursor = if (hasNext) items.last().createdAt.toString() else null
+        val items = if (hasNext) sortedScoredPosts.subList(0, pageLimit) else sortedScoredPosts
+        val nextCursor = if (hasNext && posts.isNotEmpty()) posts.last().createdAt.toString() else null
 
         val responsePage = PostPage(
             items = items.map { mapToPostDto(it) },
