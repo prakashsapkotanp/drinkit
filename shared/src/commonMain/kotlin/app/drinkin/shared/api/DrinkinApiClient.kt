@@ -173,4 +173,9 @@ class DrinkinApiClient(
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
+
+    suspend fun getUnreadCounts(): UnreadCountsResponse =
+        client.get("$baseUrl/notifications/unread-counts") {
+            withAuth()
+        }.body()
 }

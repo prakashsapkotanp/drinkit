@@ -11,12 +11,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.window.CanvasBasedWindow
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.Post
+import kotlinx.browser.localStorage
 
 // Point to backend URL
 private val apiClient = DrinkinApiClient(baseUrl = "http://localhost:8080/api")
 
 enum class WebScreen { LOGIN, REGISTER, DASHBOARD }
 enum class DashboardTab { HOME, MY_GROUP, CHAT, SAVED, PROFILE }
+
+private fun saveTokenToLocalStorage(token: String) {
+    localStorage.setItem("auth_token", token)
+}
+
+private fun loadTokenFromLocalStorage(): String {
+    return localStorage.getItem("auth_token") ?: ""
+}
+
+private fun removeTokenFromLocalStorage() {
+    localStorage.removeItem("auth_token")
+}
 
 private val WebDrinkinAccentBlue = Color(0xFF0E5FA8)
 private val WebDrinkinLightGray = Color(0xFFF3F2EF)
@@ -43,6 +56,16 @@ fun DrinkinWebApp() {
     // Refresh key to force feed list reload when needed
     var feedRefreshKey by remember { mutableStateOf(0) }
 
+    LaunchedEffect(Unit) {
+        val saved = loadTokenFromLocalStorage()
+        if (saved.isNotEmpty()) {
+            token = saved
+            apiClient.setAuthToken(saved)
+            currentScreen = WebScreen.DASHBOARD
+            currentTab = DashboardTab.HOME
+        }
+    }
+
     val webColors = lightColors(
         primary = WebDrinkinAccentBlue,
         primaryVariant = Color(0xFF003D82),
@@ -64,6 +87,7 @@ fun DrinkinWebApp() {
                         onNavigateToRegister = { currentScreen = WebScreen.REGISTER },
                         onAuthSuccess = { authToken ->
                             token = authToken
+                            saveTokenToLocalStorage(authToken)
                             currentScreen = WebScreen.DASHBOARD
                             currentTab = DashboardTab.HOME
                         }
@@ -75,6 +99,7 @@ fun DrinkinWebApp() {
                         onNavigateToLogin = { currentScreen = WebScreen.LOGIN },
                         onAuthSuccess = { authToken ->
                             token = authToken
+                            saveTokenToLocalStorage(authToken)
                             currentScreen = WebScreen.DASHBOARD
                             currentTab = DashboardTab.HOME
                         }
@@ -93,6 +118,7 @@ fun DrinkinWebApp() {
                         onForceFeedRefresh = { feedRefreshKey++ },
                         onLogout = {
                             token = null
+                            removeTokenFromLocalStorage()
                             apiClient.setAuthToken(null)
                             currentScreen = WebScreen.LOGIN
                         }
