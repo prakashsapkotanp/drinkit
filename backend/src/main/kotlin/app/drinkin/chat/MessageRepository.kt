@@ -19,4 +19,7 @@ interface MessageRepository : JpaRepository<MessageEntity, UUID> {
     ): List<MessageEntity>
 
     fun findFirstByConversationIdOrderByCreatedAtDesc(conversationId: UUID): MessageEntity?
+
+    @Query("SELECT COUNT(m) FROM MessageEntity m WHERE m.read = false AND m.senderId <> :userId AND m.conversationId IN (SELECT c.id FROM ConversationEntity c WHERE c.userAId = :userId OR c.userBId = :userId)")
+    fun countUnreadMessagesForUser(@Param("userId") userId: UUID): Int
 }

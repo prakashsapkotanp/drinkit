@@ -179,3 +179,9 @@ data class MessagePage(
 data class UploadResponse(
     val url: String
 )
+
+@Serializable
+data class UnreadCountsResponse(
+    val pendingConnectionsCount: Int,
+    val unreadMessagesCount: Int
+)

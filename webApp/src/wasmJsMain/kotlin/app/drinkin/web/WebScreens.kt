@@ -51,6 +51,32 @@ private fun getYearFromJs(): Int = js("new Date().getFullYear()")
 private fun getMonthFromJs(): Int = js("new Date().getMonth() + 1")
 private fun getDayFromJs(): Int = js("new Date().getDate()")
 
+suspend fun getErrorMessage(e: Exception): String {
+    if (e is ResponseException) {
+        try {
+            val bodyText = e.response.body<String>()
+            if (bodyText.contains("\"error\":")) {
+                val start = bodyText.indexOf("\"error\":\"") + 9
+                val end = bodyText.indexOf("\"", start)
+                if (start in 9 until end) {
+                    val msg = bodyText.substring(start, end)
+                    if (msg.isNotBlank()) return msg
+                }
+            }
+            return when (e.response.status.value) {
+                401 -> "Invalid credentials."
+                403 -> "Forbidden. Access is denied."
+                404 -> "Not found."
+                409 -> "Conflict occurred."
+                else -> "Server error (${e.response.status.value})"
+            }
+        } catch (ex: Exception) {
+            // ignore
+        }
+    }
+    return e.message ?: "An unexpected error occurred."
+}
+
 private val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
 
 fun isValidEmail(email: String): Boolean = emailRegex.matches(email)
@@ -170,14 +196,8 @@ fun WebLoginScreen(
                     val response = apiClient.login(LoginRequest(email = trimmedEmail, password = trimmedPassword))
                     apiClient.setAuthToken(response.token)
                     onAuthSuccess(response.token)
-                } catch (e: ResponseException) {
-                    errorMsg = when (e.response.status.value) {
-                        401 -> "Invalid credentials. Email or password incorrect."
-                        409 -> "Email already registered."
-                        else -> "Error: ${e.response.status.value}"
-                    }
                 } catch (e: Exception) {
-                    errorMsg = "Network error. Please try again."
+                    errorMsg = getErrorMessage(e)
                 } finally {
                     isLoading = false
                 }
@@ -341,15 +361,8 @@ fun WebRegisterScreen(
                         )
                         apiClient.setAuthToken(response.token)
                         onAuthSuccess(response.token)
-                    } catch (e: ResponseException) {
-                        errorMsg = when (e.response.status.value) {
-                            401 -> "Invalid credentials."
-                            409 -> "Email or username already in use."
-                            400 -> "Registration failed: Must be at least 18 years old."
-                            else -> "Registration failed: ${e.response.status.value}"
-                        }
                     } catch (e: Exception) {
-                        errorMsg = "Network error. Please try again."
+                        errorMsg = getErrorMessage(e)
                     } finally {
                         isLoading = false
                     }
@@ -541,12 +554,34 @@ fun WebDashboardScreen(
     var pendingConnections by remember { mutableStateOf<List<PendingConnectionRequest>>(emptyList()) }
     var activeConnections by remember { mutableStateOf<List<UserProfile>>(emptyList()) }
 
+    var pendingCount by remember { mutableStateOf(0) }
+    var unreadMessagesCount by remember { mutableStateOf(0) }
+
     // Real Conversations list
     var realConversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
     var selectedConversationId by remember { mutableStateOf<String?>(null) }
     var realMessages by remember { mutableStateOf<List<Message>>(emptyList()) }
 
     val coroutineScope = rememberCoroutineScope()
+
+    fun loadUnreadCounts() {
+        coroutineScope.launch {
+            try {
+                val counts = apiClient.getUnreadCounts()
+                pendingCount = counts.pendingConnectionsCount
+                unreadMessagesCount = counts.unreadMessagesCount
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            loadUnreadCounts()
+            delay(5000)
+        }
+    }
 
     fun loadInitialFeed() {
         isLoading = true
@@ -565,6 +600,7 @@ fun WebDashboardScreen(
                 posts = page.items
                 nextCursor = page.nextCursor
                 hasMore = page.nextCursor != null
+                loadUnreadCounts()
             } catch (e: Exception) {
                 errorMsg = "Failed to load feed. Please check your connection."
             } finally {
@@ -615,6 +651,7 @@ fun WebDashboardScreen(
         coroutineScope.launch {
             try {
                 realMessages = apiClient.getMessages(convId).items
+                loadUnreadCounts()
             } catch (e: Exception) {
                 // Ignore
             }
@@ -648,6 +685,7 @@ fun WebDashboardScreen(
         if (currentTab == DashboardTab.MY_GROUP) {
             loadNetworkData()
         } else if (currentTab == DashboardTab.CHAT) {
+            loadNetworkData()
             loadConversationsList()
         }
     }
@@ -758,7 +796,30 @@ fun WebDashboardScreen(
                                 .padding(horizontal = 16.dp)
                                 .fillMaxHeight()
                         ) {
-                            Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(20.dp))
+                            Box {
+                                Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(20.dp))
+                                val badgeCount = when (tab) {
+                                    DashboardTab.MY_GROUP -> pendingCount
+                                    DashboardTab.CHAT -> unreadMessagesCount
+                                    else -> 0
+                                }
+                                if (badgeCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .offset(x = 10.dp, y = (-6).dp)
+                                            .background(Color.Red, shape = CircleShape)
+                                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = badgeCount.toString(),
+                                            color = Color.White,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(label, color = color, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal)
                         }
@@ -845,6 +906,27 @@ fun WebDashboardScreen(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    if (errorMsg != null) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = Color(0xFFFDE8E8),
+                            shape = RoundedCornerShape(8.dp),
+                            elevation = 1.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Warning, contentDescription = "Error", tint = Color(0xFFE53E3E))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(errorMsg!!, color = Color(0xFFC53030), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                                IconButton(onClick = { errorMsg = null }, modifier = Modifier.size(24.dp)) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color(0xFFC53030), modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    }
+
                     if (viewingOtherUserId != null) {
                         // Render User's Profile view (Can be me or other)
                         if (isOtherProfileLoading) {
@@ -1222,33 +1304,97 @@ fun WebDashboardScreen(
                                                 Text("Messaging", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                             }
 
-                                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                                items(realConversations) { conv ->
-                                                    val isSelected = selectedConversationId == conv.id
-                                                    Row(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .background(if (isSelected) DrinkinLightGray else DrinkinCardBackground)
-                                                            .clickable {
-                                                                selectedConversationId = conv.id
-                                                                loadMessagesForActiveConv(conv.id)
-                                                            }
-                                                            .padding(12.dp),
-                                                        verticalAlignment = Alignment.CenterVertically
-                                                    ) {
-                                                        Box(
-                                                            modifier = Modifier.size(36.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
-                                                            contentAlignment = Alignment.Center
-                                                        ) {
-                                                            Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue)
-                                                        }
-                                                        Spacer(modifier = Modifier.width(10.dp))
-                                                        Column(modifier = Modifier.weight(1f)) {
-                                                            Text(conv.otherUser.displayName ?: conv.otherUser.username, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                                            Text(conv.lastMessagePreview ?: "No messages.", color = DrinkinMutedGray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                                        }
+                                            var connectionQuery by remember { mutableStateOf("") }
+                                            var connectionSearchResults by remember { mutableStateOf<List<UserProfile>>(emptyList()) }
+
+                                            LaunchedEffect(connectionQuery) {
+                                                if (connectionQuery.isNotBlank()) {
+                                                    connectionSearchResults = activeConnections.filter {
+                                                        it.username.contains(connectionQuery, ignoreCase = true) ||
+                                                        (it.displayName ?: "").contains(connectionQuery, ignoreCase = true)
                                                     }
-                                                    Divider()
+                                                } else {
+                                                    connectionSearchResults = emptyList()
+                                                }
+                                            }
+
+                                            OutlinedTextField(
+                                                value = connectionQuery,
+                                                onValueChange = { connectionQuery = it },
+                                                placeholder = { Text("Search connections to message...", fontSize = 11.sp) },
+                                                modifier = Modifier.fillMaxWidth().padding(8.dp).height(44.dp),
+                                                shape = RoundedCornerShape(24.dp),
+                                                singleLine = true,
+                                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                            )
+
+                                            if (connectionQuery.isNotBlank()) {
+                                                Text("Search Results", fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = DrinkinMutedGray)
+                                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                                    items(connectionSearchResults) { conn ->
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .clickable {
+                                                                    connectionQuery = ""
+                                                                    coroutineScope.launch {
+                                                                        try {
+                                                                            val conv = apiClient.getOrCreateConversation(ConversationRequest(otherUserId = conn.id))
+                                                                            selectedConversationId = conv.id
+                                                                            loadConversationsList()
+                                                                            loadMessagesForActiveConv(conv.id)
+                                                                        } catch (e: Exception) {
+                                                                            errorMsg = getErrorMessage(e)
+                                                                        }
+                                                                    }
+                                                                }
+                                                                .padding(12.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier.size(36.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue)
+                                                            }
+                                                            Spacer(modifier = Modifier.width(10.dp))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(conn.displayName ?: conn.username, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                                Text("@${conn.username}", color = DrinkinMutedGray, fontSize = 11.sp)
+                                                            }
+                                                        }
+                                                        Divider()
+                                                    }
+                                                }
+                                            } else {
+                                                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                                    items(realConversations) { conv ->
+                                                        val isSelected = selectedConversationId == conv.id
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .background(if (isSelected) DrinkinLightGray else DrinkinCardBackground)
+                                                                .clickable {
+                                                                    selectedConversationId = conv.id
+                                                                    loadMessagesForActiveConv(conv.id)
+                                                                }
+                                                                .padding(12.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier.size(36.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue)
+                                                            }
+                                                            Spacer(modifier = Modifier.width(10.dp))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(conv.otherUser.displayName ?: conv.otherUser.username, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                                Text(conv.lastMessagePreview ?: "No messages.", color = DrinkinMutedGray, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                            }
+                                                        }
+                                                        Divider()
+                                                    }
                                                 }
                                             }
                                         }
@@ -1293,6 +1439,44 @@ fun WebDashboardScreen(
                                                     }
                                                 }
 
+                                                // Quick Greeting Options with Emojis
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text("Quick greetings:", fontSize = 11.sp, color = DrinkinMutedGray)
+                                                    val options = listOf(
+                                                        "Hey 👋",
+                                                        "Hello 😊",
+                                                        "Hi! ☕",
+                                                        "Wave 👋"
+                                                    )
+                                                    options.forEach { option ->
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(DrinkinAccentBlue.copy(alpha = 0.08f), shape = RoundedCornerShape(16.dp))
+                                                                .clickable {
+                                                                    coroutineScope.launch {
+                                                                        try {
+                                                                            val sent = apiClient.sendMessage(activeConv.id, MessageRequest(text = option))
+                                                                            realMessages = realMessages + sent
+                                                                            loadConversationsList()
+                                                                            loadUnreadCounts()
+                                                                        } catch (e: Exception) {
+                                                                            errorMsg = getErrorMessage(e)
+                                                                        }
+                                                                    }
+                                                                }
+                                                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                                        ) {
+                                                            Text(option, color = DrinkinAccentBlue, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                                        }
+                                                    }
+                                                }
+
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth().border(0.5.dp, DrinkinBorderColor).padding(12.dp),
                                                     verticalAlignment = Alignment.CenterVertically
@@ -1313,7 +1497,11 @@ fun WebDashboardScreen(
                                                                     try {
                                                                         val sent = apiClient.sendMessage(activeConv.id, MessageRequest(text = typed))
                                                                         realMessages = realMessages + sent
-                                                                    } catch (e: Exception) {}
+                                                                        loadConversationsList()
+                                                                        loadUnreadCounts()
+                                                                    } catch (e: Exception) {
+                                                                        errorMsg = getErrorMessage(e)
+                                                                    }
                                                                 }
                                                             }
                                                         },
@@ -1647,7 +1835,7 @@ fun WebDashboardScreen(
                                             showStartPostModal = false
                                             onForceFeedRefresh()
                                         } catch (e: Exception) {
-                                            inlineError = "Failed to post. Please try again."
+                                            inlineError = getErrorMessage(e)
                                         }
                                     }
                                 },

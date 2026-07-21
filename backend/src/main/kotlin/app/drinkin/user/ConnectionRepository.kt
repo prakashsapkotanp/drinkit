@@ -31,4 +31,6 @@ interface ConnectionRepository : JpaRepository<ConnectionEntity, UUID> {
 
     @Query("SELECT COUNT(c) > 0 FROM ConnectionEntity c WHERE ((c.requesterId = :userA AND c.addresseeId = :userB) OR (c.requesterId = :userB AND c.addresseeId = :userA)) AND c.status = 'ACCEPTED'")
     fun areConnected(@Param("userA") userA: UUID, @Param("userB") userB: UUID): Boolean
+
+    fun countByAddresseeIdAndStatus(addresseeId: UUID, status: String): Int
 }

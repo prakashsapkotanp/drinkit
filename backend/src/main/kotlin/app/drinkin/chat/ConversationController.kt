@@ -180,6 +180,13 @@ class ConversationController(
         val pageable = PageRequest.of(0, pageLimit + 1)
         val list = messageRepository.findMessagesWithCursor(id, parsedCursor, pageable)
 
+        // Mark messages from others as read
+        val unreadFromOthers = list.filter { it.senderId != currentUserId && !it.read }
+        if (unreadFromOthers.isNotEmpty()) {
+            unreadFromOthers.forEach { it.read = true }
+            messageRepository.saveAll(unreadFromOthers)
+        }
+
         val hasNext = list.size > pageLimit
         val items = if (hasNext) list.subList(0, pageLimit) else list
         val nextCursor = if (hasNext) items.last().createdAt.toString() else null
