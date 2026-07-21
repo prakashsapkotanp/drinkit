@@ -4,6 +4,7 @@ import app.drinkin.shared.model.*
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.call.body
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -37,6 +38,19 @@ class DrinkinApiClient(
         client.post("$baseUrl/auth/register") {
             contentType(ContentType.Application.Json)
             setBody(request)
+        }.body()
+
+    suspend fun uploadMedia(fileName: String, fileBytes: ByteArray): UploadResponse =
+        client.submitFormWithBinaryData(
+            url = "$baseUrl/media/upload",
+            formData = io.ktor.client.request.forms.formData {
+                append("file", fileBytes, io.ktor.http.Headers.build {
+                    append(io.ktor.http.HttpHeaders.ContentType, "image/jpeg")
+                    append(io.ktor.http.HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                })
+            }
+        ) {
+            withAuth()
         }.body()
 
     suspend fun login(request: LoginRequest): AuthResponse =

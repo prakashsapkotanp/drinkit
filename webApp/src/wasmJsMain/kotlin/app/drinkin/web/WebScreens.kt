@@ -504,6 +504,7 @@ fun WebRegisterScreen(
 @Composable
 fun WebDashboardScreen(
     apiClient: DrinkinApiClient,
+    token: String?,
     currentTab: DashboardTab,
     onTabChange: (DashboardTab) -> Unit,
     savedPosts: MutableList<Post>,
