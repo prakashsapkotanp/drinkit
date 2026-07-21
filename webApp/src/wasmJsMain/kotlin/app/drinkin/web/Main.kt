@@ -108,6 +108,7 @@ fun DrinkinWebApp() {
                 WebScreen.DASHBOARD -> {
                     WebDashboardScreen(
                         apiClient = apiClient,
+                        token = token,
                         currentTab = currentTab,
                         onTabChange = { currentTab = it },
                         savedPosts = savedPosts,
