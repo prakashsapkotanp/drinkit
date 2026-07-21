@@ -174,3 +174,8 @@ data class MessagePage(
     val items: List<Message>,
     val nextCursor: String? = null
 )
+
+@Serializable
+data class UploadResponse(
+    val url: String
+)

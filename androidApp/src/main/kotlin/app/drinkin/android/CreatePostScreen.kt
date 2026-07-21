@@ -1,5 +1,7 @@
 package app.drinkin.android
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,6 +13,7 @@ import androidx.compose.material.icons.outlined.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.CreatePostRequest
@@ -23,6 +26,7 @@ fun CreatePostScreen(
     onBackToFeed: () -> Unit,
     onPostCreated: () -> Unit
 ) {
+    val context = LocalContext.current
     var text by remember { mutableStateOf("") }
     var drinkCategory by remember { mutableStateOf(DrinkCategory.ALCOHOLIC) }
     var drinkType by remember { mutableStateOf("") }
@@ -30,11 +34,22 @@ fun CreatePostScreen(
     var tastingNotes by remember { mutableStateOf("") }
     var scenario by remember { mutableStateOf("") }
 
+    var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var uploadedImageUrl by remember { mutableStateOf<String?>(null) }
+
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        selectedImageUri = uri
+        uploadedImageUrl = null
+        errorMsg = null
+    }
 
     Scaffold(
         topBar = {
@@ -145,6 +160,25 @@ fun CreatePostScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            // Image Selection Section
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("Post Image (Optional, max 5MB)", style = MaterialTheme.typography.subtitle1)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = { launcher.launch("image/*") }) {
+                        Text(if (selectedImageUri == null) "Select Image" else "Change Image")
+                    }
+                    if (selectedImageUri != null) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Image Selected", style = MaterialTheme.typography.body2, color = MaterialTheme.colors.secondary)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = { selectedImageUri = null }) {
+                            Text("Clear")
+                        }
+                    }
+                }
+            }
+
             errorMsg?.let {
                 Text(it, color = MaterialTheme.colors.error)
             }
@@ -169,6 +203,26 @@ fun CreatePostScreen(
                         isLoading = true
                         coroutineScope.launch {
                             try {
+                                var finalImageUrl: String? = null
+                                if (selectedImageUri != null) {
+                                    val resolver = context.contentResolver
+                                    val inputStream = resolver.openInputStream(selectedImageUri!!)
+                                    val bytes = inputStream?.readBytes() ?: byteArrayOf()
+                                    if (bytes.size > 5 * 1024 * 1024) {
+                                        errorMsg = "File size exceeds 5MB limit. Please choose a smaller image."
+                                        isLoading = false
+                                        return@launch
+                                    }
+                                    try {
+                                        val uploadResp = apiClient.uploadMedia("post_image.jpg", bytes)
+                                        finalImageUrl = uploadResp.url
+                                    } catch (e: Exception) {
+                                        errorMsg = "Image upload failed. Please check your connection and try again."
+                                        isLoading = false
+                                        return@launch
+                                    }
+                                }
+
                                 apiClient.createPost(
                                     CreatePostRequest(
                                         text = text,
@@ -176,12 +230,13 @@ fun CreatePostScreen(
                                         drinkType = drinkType.takeIf { it.isNotBlank() },
                                         rating = rating,
                                         tastingNotes = tastingNotes.takeIf { it.isNotBlank() },
-                                        scenario = scenario.takeIf { it.isNotBlank() }
+                                        scenario = scenario.takeIf { it.isNotBlank() },
+                                        mediaUrls = if (finalImageUrl != null) listOf(finalImageUrl) else emptyList()
                                     )
                                 )
                                 onPostCreated()
                             } catch (e: Exception) {
-                                errorMsg = "Failed to create post. Please try again."
+                                errorMsg = "Failed to create post. Please check your internet connection or try again later."
                             } finally {
                                 isLoading = false
                             }
