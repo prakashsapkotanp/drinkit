@@ -94,6 +94,7 @@ class PostController(
             scenario = entity.scenario,
             mediaUrls = entity.mediaUrls.toList(),
             likeCount = totalLikes,
+            reactionCounts = entity.reactionCounts,
             commentCount = entity.commentCount,
             createdAt = entity.createdAt.toString()
         )

@@ -103,7 +103,7 @@ class ConversationController(
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(mapOf("error" to "Gated: You must be connected to start a conversation"))
         }
 
-        val sorted = listOf(currentUserId, otherUserId).sorted()
+        val sorted = listOf(currentUserId, otherUserId).sortedBy { it.toString() }
         val userAId = sorted[0]
         val userBId = sorted[1]
 
