@@ -1322,15 +1322,21 @@ fun WebDashboardScreen(
                                                 }
                                             }
 
-                                            OutlinedTextField(
+                                            TextField(
                                                 value = connectionQuery,
                                                 onValueChange = { connectionQuery = it },
                                                 placeholder = { Text("Search connections to message...", fontSize = 11.sp) },
-                                                modifier = Modifier.fillMaxWidth().padding(8.dp).height(48.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(8.dp).heightIn(min = 40.dp),
                                                 shape = RoundedCornerShape(24.dp),
                                                 singleLine = true,
                                                 textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
-                                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                                                leadingIcon = { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) } },
+                                                colors = TextFieldDefaults.textFieldColors(
+                                                    backgroundColor = Color(0xFFEEF3F8),
+                                                    focusedIndicatorColor = Color.Transparent,
+                                                    unfocusedIndicatorColor = Color.Transparent,
+                                                    disabledIndicatorColor = Color.Transparent
+                                                )
                                             )
 
                                             if (connectionQuery.isNotBlank()) {
@@ -1378,7 +1384,7 @@ fun WebDashboardScreen(
                                                         Row(
                                                             modifier = Modifier
                                                                 .fillMaxWidth()
-                                                                .background(if (isSelected) DrinkinLightGray else DrinkinCardBackground)
+                                                                .background(if (isSelected) Color(0xFFEDF3F8) else DrinkinCardBackground)
                                                                 .clickable {
                                                                     selectedConversationId = conv.id
                                                                     loadMessagesForActiveConv(conv.id)
@@ -1429,16 +1435,21 @@ fun WebDashboardScreen(
                                                     items(realMessages.reversed()) { msg ->
                                                         val isMe = msg.senderId != activeConv.otherUser.id
                                                         val align = if (isMe) Alignment.End else Alignment.Start
-                                                        val bgColor = if (isMe) DrinkinAccentBlue else DrinkinLightGray
+                                                        val bgColor = if (isMe) Color(0xFF0A66C2) else Color(0xFFF2F2F2)
                                                         val textCol = if (isMe) Color.White else DrinkinTextBlack
+                                                        val bubbleShape = if (isMe) {
+                                                            RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 12.dp, bottomEnd = 0.dp)
+                                                        } else {
+                                                            RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 0.dp, bottomEnd = 12.dp)
+                                                        }
 
                                                         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = align) {
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .background(bgColor, shape = RoundedCornerShape(12.dp))
+                                                                    .background(bgColor, shape = bubbleShape)
                                                                     .padding(12.dp)
                                                             ) {
-                                                                Text(msg.text, color = textCol)
+                                                                Text(msg.text, color = textCol, fontSize = 14.sp)
                                                             }
                                                         }
                                                     }
@@ -1482,20 +1493,31 @@ fun WebDashboardScreen(
                                                     }
                                                 }
 
+                                                // Clean footer container with bottom message input
                                                 Row(
-                                                    modifier = Modifier.fillMaxWidth().border(0.5.dp, DrinkinBorderColor).padding(12.dp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .background(Color(0xFFF8F9FA))
+                                                        .border(0.5.dp, DrinkinBorderColor)
+                                                        .padding(12.dp),
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     OutlinedTextField(
                                                         value = chatInput,
                                                         onValueChange = { chatInput = it },
                                                         placeholder = { Text("Write a message...") },
-                                                        modifier = Modifier.weight(1f).height(48.dp),
+                                                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
                                                         singleLine = true,
-                                                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                                                        shape = RoundedCornerShape(20.dp),
+                                                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+                                                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                                                            backgroundColor = Color.White,
+                                                            focusedBorderColor = Color(0xFF0A66C2),
+                                                            unfocusedBorderColor = DrinkinBorderColor
+                                                        )
                                                     )
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    IconButton(
+                                                    Spacer(modifier = Modifier.width(12.dp))
+                                                    Button(
                                                         onClick = {
                                                             if (chatInput.isNotBlank()) {
                                                                 val typed = chatInput
@@ -1512,9 +1534,14 @@ fun WebDashboardScreen(
                                                                 }
                                                             }
                                                         },
-                                                        enabled = chatInput.isNotBlank()
+                                                        enabled = chatInput.isNotBlank(),
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            backgroundColor = Color(0xFF0A66C2),
+                                                            contentColor = Color.White
+                                                        ),
+                                                        shape = RoundedCornerShape(20.dp)
                                                     ) {
-                                                        Icon(Icons.Default.Send, contentDescription = "Send", tint = DrinkinAccentBlue)
+                                                        Text("Send", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                                     }
                                                 }
                                             }
