@@ -31,6 +31,7 @@ data class Post(
     val scenario: String? = null,
     val mediaUrls: List<String> = emptyList(),
     val likeCount: Int = 0,
+    val reactionCounts: Map<String, Int> = emptyMap(),
     val commentCount: Int = 0,
     val createdAt: String
 )

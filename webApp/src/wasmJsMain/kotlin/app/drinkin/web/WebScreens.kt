@@ -28,6 +28,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -1326,6 +1327,7 @@ fun WebDashboardScreen(
                                                 modifier = Modifier.fillMaxWidth().padding(8.dp).height(44.dp),
                                                 shape = RoundedCornerShape(24.dp),
                                                 singleLine = true,
+                                                textStyle = TextStyle(fontSize = 13.sp),
                                                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) }
                                             )
 
@@ -1937,6 +1939,31 @@ fun WebPostCard(
                 post.rating?.let {
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("⭐ $it/5", style = MaterialTheme.typography.caption, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            val activeReactions = post.reactionCounts.filter { it.value > 0 }
+            if (activeReactions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    activeReactions.forEach { (type, count) ->
+                        val emoji = when (type) {
+                            "LIKE" -> "👍"
+                            "LOVE" -> "❤️"
+                            "CHEERS" -> "🍻"
+                            "WOW" -> "😮"
+                            "SAD" -> "😢"
+                            else -> "👍"
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(emoji, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("$count", fontSize = 11.sp, color = DrinkinMutedGray)
+                        }
+                    }
                 }
             }
 

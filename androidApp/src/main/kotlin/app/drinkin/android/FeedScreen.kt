@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.Post
 import io.ktor.client.request.get
@@ -325,6 +326,31 @@ fun PostCard(
                         .height(200.dp)
                         .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
                 )
+            }
+
+            val activeReactions = post.reactionCounts.filter { it.value > 0 }
+            if (activeReactions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    activeReactions.forEach { (type, count) ->
+                        val emoji = when (type) {
+                            "LIKE" -> "👍"
+                            "LOVE" -> "❤️"
+                            "CHEERS" -> "🍻"
+                            "WOW" -> "😮"
+                            "SAD" -> "😢"
+                            else -> "👍"
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(emoji, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("$count", style = MaterialTheme.typography.caption, color = LocalContentColor.current.copy(alpha = 0.6f))
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
