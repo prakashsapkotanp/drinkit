@@ -745,7 +745,7 @@ fun WebDashboardScreen(
                             value = searchInput,
                             onValueChange = { searchInput = it },
                             placeholder = { Text("Search users...", fontSize = 12.sp) },
-                            modifier = Modifier.width(220.dp).height(48.dp),
+                            modifier = Modifier.width(220.dp).heightIn(min = 40.dp),
                             shape = RoundedCornerShape(24.dp),
                             singleLine = true,
                             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
@@ -1127,10 +1127,10 @@ fun WebDashboardScreen(
                                             Box(
                                                 modifier = Modifier
                                                     .weight(1f)
-                                                    .height(44.dp)
+                                                    .heightIn(min = 40.dp)
                                                     .border(1.dp, DrinkinBorderColor, shape = RoundedCornerShape(24.dp))
                                                     .clickable { showStartPostModal = true }
-                                                    .padding(horizontal = 16.dp),
+                                                    .padding(horizontal = 16.dp, vertical = 8.dp),
                                                 contentAlignment = Alignment.CenterStart
                                             ) {
                                                 Text("Start a post about a drink experience...", color = DrinkinMutedGray, fontSize = 14.sp)
