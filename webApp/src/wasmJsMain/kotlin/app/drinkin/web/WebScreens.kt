@@ -1961,16 +1961,22 @@ fun WebPostCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     activeReactions.forEach { (type, count) ->
-                        val emoji = when (type) {
-                            "LIKE" -> "👍"
-                            "LOVE" -> "❤️"
-                            "CHEERS" -> "🍻"
-                            "WOW" -> "😮"
-                            "SAD" -> "😢"
-                            else -> "👍"
+                        val pair = when (type) {
+                            "LIKE" -> Pair(Icons.Default.ThumbUp, DrinkinAccentBlue)
+                            "LOVE" -> Pair(Icons.Default.Favorite, Color(0xFFE53E3E))
+                            "CHEERS" -> Pair(Icons.Default.Star, Color(0xFFD69E2E))
+                            "WOW" -> Pair(Icons.Default.Send, Color(0xFF319795))
+                            "SAD" -> Pair(Icons.Default.Warning, Color(0xFF805AD5))
+                            else -> Pair(Icons.Default.ThumbUp, DrinkinAccentBlue)
                         }
+                        val (icon, color) = pair
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(emoji, fontSize = 14.sp)
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = type,
+                                tint = color,
+                                modifier = Modifier.size(14.dp)
+                            )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text("$count", fontSize = 11.sp, color = DrinkinMutedGray)
                         }
@@ -2020,22 +2026,25 @@ fun WebPostCard(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 val reactions = listOf(
-                                    "LIKE" to "👍",
-                                    "LOVE" to "❤️",
-                                    "CHEERS" to "🍻",
-                                    "WOW" to "😮",
-                                    "SAD" to "😢"
+                                    "LIKE" to Pair(Icons.Default.ThumbUp, DrinkinAccentBlue),
+                                    "LOVE" to Pair(Icons.Default.Favorite, Color(0xFFE53E3E)),
+                                    "CHEERS" to Pair(Icons.Default.Star, Color(0xFFD69E2E)),
+                                    "WOW" to Pair(Icons.Default.Send, Color(0xFF319795)),
+                                    "SAD" to Pair(Icons.Default.Warning, Color(0xFF805AD5))
                                 )
-                                reactions.forEach { (type, emoji) ->
-                                    Text(
-                                        text = emoji,
-                                        fontSize = 18.sp,
+                                reactions.forEach { (type, pair) ->
+                                    val (icon, color) = pair
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = type,
+                                        tint = color,
                                         modifier = Modifier
+                                            .size(20.dp)
                                             .clickable {
                                                 onLikeToggle(type)
                                                 showReactions = false
                                             }
-                                            .padding(4.dp)
+                                            .padding(2.dp)
                                     )
                                 }
                             }

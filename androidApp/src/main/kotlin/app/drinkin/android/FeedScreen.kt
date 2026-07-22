@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -347,16 +348,22 @@ fun PostCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     activeReactions.forEach { (type, count) ->
-                        val emoji = when (type) {
-                            "LIKE" -> "👍"
-                            "LOVE" -> "❤️"
-                            "CHEERS" -> "🍻"
-                            "WOW" -> "😮"
-                            "SAD" -> "😢"
-                            else -> "👍"
+                        val pair = when (type) {
+                            "LIKE" -> Pair(Icons.Default.ThumbUp, Color(0xFF0E5FA8))
+                            "LOVE" -> Pair(Icons.Default.Favorite, Color(0xFFE53E3E))
+                            "CHEERS" -> Pair(Icons.Default.Star, Color(0xFFD69E2E))
+                            "WOW" -> Pair(Icons.Default.Send, Color(0xFF319795))
+                            "SAD" -> Pair(Icons.Default.Warning, Color(0xFF805AD5))
+                            else -> Pair(Icons.Default.ThumbUp, Color(0xFF0E5FA8))
                         }
+                        val (icon, color) = pair
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(emoji, fontSize = 14.sp)
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = type,
+                                tint = color,
+                                modifier = Modifier.size(14.dp)
+                            )
                             Spacer(modifier = Modifier.width(3.dp))
                             Text("$count", style = MaterialTheme.typography.caption, color = LocalContentColor.current.copy(alpha = 0.6f))
                         }
