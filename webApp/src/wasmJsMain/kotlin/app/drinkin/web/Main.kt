@@ -12,6 +12,7 @@ import androidx.compose.ui.window.CanvasBasedWindow
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.Post
 import kotlinx.browser.localStorage
+import app.drinkin.web.auth.*
 
 // Point to backend URL
 private val apiClient = DrinkinApiClient(baseUrl = "http://localhost:8080/api")
