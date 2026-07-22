@@ -745,15 +745,17 @@ fun WebDashboardScreen(
                             value = searchInput,
                             onValueChange = { searchInput = it },
                             placeholder = { Text("Search users...", fontSize = 12.sp) },
-                            modifier = Modifier.width(220.dp).height(44.dp),
-                            shape = RoundedCornerShape(24.dp)
+                            modifier = Modifier.width(220.dp).height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
                         )
 
                         if (searchResults.isNotEmpty()) {
                             Card(
                                 modifier = Modifier
                                     .width(220.dp)
-                                    .padding(top = 48.dp),
+                                    .padding(top = 52.dp),
                                 elevation = 8.dp,
                                 shape = RoundedCornerShape(4.dp)
                             ) {
@@ -1324,7 +1326,7 @@ fun WebDashboardScreen(
                                                 value = connectionQuery,
                                                 onValueChange = { connectionQuery = it },
                                                 placeholder = { Text("Search connections to message...", fontSize = 11.sp) },
-                                                modifier = Modifier.fillMaxWidth().padding(8.dp).height(44.dp),
+                                                modifier = Modifier.fillMaxWidth().padding(8.dp).height(48.dp),
                                                 shape = RoundedCornerShape(24.dp),
                                                 singleLine = true,
                                                 textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
@@ -1488,7 +1490,9 @@ fun WebDashboardScreen(
                                                         value = chatInput,
                                                         onValueChange = { chatInput = it },
                                                         placeholder = { Text("Write a message...") },
-                                                        modifier = Modifier.weight(1f).height(44.dp)
+                                                        modifier = Modifier.weight(1f).height(48.dp),
+                                                        singleLine = true,
+                                                        textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
                                                     )
                                                     Spacer(modifier = Modifier.width(8.dp))
                                                     IconButton(
