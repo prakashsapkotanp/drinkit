@@ -328,7 +328,18 @@ fun PostCard(
                 )
             }
 
-            val activeReactions = post.reactionCounts.filter { it.value > 0 }
+            val adjustedReactions = post.reactionCounts.toMutableMap()
+            val reactionOffset = likeCount - post.likeCount
+            if (reactionOffset != 0) {
+                val currentCount = adjustedReactions["LIKE"] ?: 0
+                val newCount = currentCount + reactionOffset
+                if (newCount > 0) {
+                    adjustedReactions["LIKE"] = newCount
+                } else {
+                    adjustedReactions.remove("LIKE")
+                }
+            }
+            val activeReactions = adjustedReactions.filter { it.value > 0 }
             if (activeReactions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(

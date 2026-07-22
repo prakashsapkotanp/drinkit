@@ -1327,7 +1327,7 @@ fun WebDashboardScreen(
                                                 modifier = Modifier.fillMaxWidth().padding(8.dp).height(44.dp),
                                                 shape = RoundedCornerShape(24.dp),
                                                 singleLine = true,
-                                                textStyle = TextStyle(fontSize = 13.sp),
+                                                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
                                                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) }
                                             )
 
@@ -1942,7 +1942,18 @@ fun WebPostCard(
                 }
             }
 
-            val activeReactions = post.reactionCounts.filter { it.value > 0 }
+            val adjustedReactions = post.reactionCounts.toMutableMap()
+            val reactionOffset = likeCount - post.likeCount
+            if (reactionOffset != 0) {
+                val currentCount = adjustedReactions["LIKE"] ?: 0
+                val newCount = currentCount + reactionOffset
+                if (newCount > 0) {
+                    adjustedReactions["LIKE"] = newCount
+                } else {
+                    adjustedReactions.remove("LIKE")
+                }
+            }
+            val activeReactions = adjustedReactions.filter { it.value > 0 }
             if (activeReactions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(

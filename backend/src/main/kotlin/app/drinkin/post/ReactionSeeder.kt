@@ -51,7 +51,8 @@ class ReactionSeeder(
                     rating = 5,
                     tastingNotes = "Roasty, dark chocolate, espresso",
                     scenario = "Evening relaxation",
-                    createdAt = OffsetDateTime.now().minusHours(2)
+                    createdAt = OffsetDateTime.now().minusHours(2),
+                    reactionCounts = mapOf("LIKE" to 3, "LOVE" to 1, "CHEERS" to 2)
                 )
 
                 val post2 = PostEntity(
@@ -62,7 +63,8 @@ class ReactionSeeder(
                     rating = 4,
                     tastingNotes = "Bright, citrus, jasmine",
                     scenario = "Morning routine",
-                    createdAt = OffsetDateTime.now().minusHours(1)
+                    createdAt = OffsetDateTime.now().minusHours(1),
+                    reactionCounts = mapOf("LIKE" to 1, "WOW" to 2)
                 )
 
                 postRepository.saveAll(listOf(post1, post2))
