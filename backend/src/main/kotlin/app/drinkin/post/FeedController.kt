@@ -20,7 +20,9 @@ class FeedController(
     private val postRepository: PostRepository,
     private val userRepository: UserRepository,
     private val followRepository: FollowRepository,
-    private val connectionRepository: app.drinkin.user.ConnectionRepository
+    private val connectionRepository: app.drinkin.user.ConnectionRepository,
+    private val postReactionRepository: PostReactionRepository,
+    private val reactionTypeRepository: ReactionTypeRepository
 ) {
 
     private fun getCurrentUserId(): UUID? {
@@ -50,6 +52,15 @@ class FeedController(
         )
         val totalLikes = entity.reactionCounts.values.sum()
 
+        val currentUserId = getCurrentUserId()
+        val myReactionStr = if (currentUserId != null) {
+            val reactionEntity = postReactionRepository.findByPostIdAndUserId(entity.id, currentUserId)
+            if (reactionEntity != null) {
+                val type = reactionTypeRepository.findById(reactionEntity.reactionTypeId).orElse(null)
+                type?.code
+            } else null
+        } else null
+
         return Post(
             id = entity.id.toString(),
             author = authorProfile,
@@ -63,7 +74,8 @@ class FeedController(
             likeCount = totalLikes,
             reactionCounts = entity.reactionCounts,
             commentCount = entity.commentCount,
-            createdAt = entity.createdAt.toString()
+            createdAt = entity.createdAt.toString(),
+            myReaction = myReactionStr
         )
     }
 

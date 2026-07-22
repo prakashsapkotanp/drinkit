@@ -33,7 +33,8 @@ data class Post(
     val likeCount: Int = 0,
     val reactionCounts: Map<String, Int> = emptyMap(),
     val commentCount: Int = 0,
-    val createdAt: String
+    val createdAt: String,
+    val myReaction: String? = null
 )
 
 @Serializable
