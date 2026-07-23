@@ -1,4 +1,7 @@
 package app.drinkin.web.profile
+import app.drinkin.web.*
+import app.drinkin.web.feed.*
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalFocusManager
@@ -47,6 +51,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
+
 
 @Composable
 fun ProfileTabContent(
@@ -130,6 +135,149 @@ fun ProfileTabContent(
                     Text("Drink Preferences", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(editPrefs, color = DrinkinTextBlack, fontSize = 14.sp)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun OtherUserProfileContent(
+    profile: UserProfile,
+    isMe: Boolean,
+    otherUserPosts: List<Post>,
+    isOtherUserPostsLoading: Boolean,
+    onConnectClick: () -> Unit,
+    onAcceptConnection: () -> Unit,
+    onRejectConnection: () -> Unit,
+    onMessageClick: () -> Unit,
+    onCloseClick: () -> Unit,
+    onLikeToggle: (Post, String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(72.dp).background(DrinkinAccentBlue.copy(alpha = 0.1f), shape = CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = DrinkinAccentBlue, modifier = Modifier.size(44.dp))
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(profile.displayName ?: profile.username, style = MaterialTheme.typography.h6, fontWeight = FontWeight.Bold)
+                            Text("@${profile.username}", color = DrinkinMutedGray, fontSize = 13.sp)
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = onCloseClick) {
+                            Icon(Icons.Default.Close, contentDescription = "Close Profile")
+                        }
+                    }
+
+                    Divider()
+
+                    Text(profile.bio ?: "No bio provided.", style = MaterialTheme.typography.body2)
+
+                    Divider()
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text("${profile.followerCount} Followers")
+                        Text("${profile.followingCount} Following")
+                    }
+
+                    Divider()
+
+                    // Hide connection status actions entirely if viewing our own profile!
+                    if (!isMe) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            when (profile.connectionStatus) {
+                                "NONE", null -> {
+                                    Button(
+                                        onClick = onConnectClick,
+                                        colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue)
+                                    ) {
+                                        Text("Connect", color = Color.White)
+                                    }
+                                }
+                                "PENDING_SENT" -> {
+                                    Button(onClick = {}, enabled = false) {
+                                        Text("Request Pending")
+                                    }
+                                }
+                                "PENDING_RECEIVED" -> {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Button(
+                                            onClick = onAcceptConnection,
+                                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF2E7D32))
+                                        ) {
+                                            Text("Accept", color = Color.White)
+                                        }
+
+                                        Button(
+                                            onClick = onRejectConnection,
+                                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828))
+                                        ) {
+                                            Text("Reject", color = Color.White)
+                                        }
+                                    }
+                                }
+                                "CONNECTED" -> {
+                                    Button(
+                                        onClick = onMessageClick,
+                                        colors = ButtonDefaults.buttonColors(backgroundColor = DrinkinAccentBlue)
+                                    ) {
+                                        Text("Message", color = Color.White)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Text(
+                text = "Recent Activity",
+                style = MaterialTheme.typography.subtitle1,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+
+        if (isOtherUserPostsLoading) {
+            item {
+                CircularProgressIndicator(modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally), color = DrinkinAccentBlue)
+            }
+        } else if (otherUserPosts.isEmpty()) {
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Box(modifier = Modifier.padding(16.dp), contentAlignment = Alignment.Center) {
+                        Text("No drink reviews posted yet.", style = MaterialTheme.typography.caption, color = DrinkinMutedGray)
+                    }
+                }
+            }
+        } else {
+            items(otherUserPosts) { post ->
+                WebPostCard(
+                    post = post,
+                    isLiked = post.myReaction != null,
+                    likeCount = post.likeCount,
+                    onAuthorClick = {},
+                    onLikeToggle = { reactionType ->
+                        onLikeToggle(post, reactionType)
+                    },
+                    isSaved = false,
+                    onSaveToggle = {}
+                )
             }
         }
     }

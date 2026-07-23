@@ -1,4 +1,6 @@
 package app.drinkin.web.feed
+import app.drinkin.web.*
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalFocusManager
@@ -47,6 +50,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
+
 
 @Composable
 fun FeedTabContent(
@@ -89,10 +93,10 @@ fun FeedTabContent(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .heightIn(min = 40.dp)
                             .border(1.dp, DrinkinBorderColor, shape = RoundedCornerShape(24.dp))
                             .clickable { onStartPostClick() }
-                            .padding(horizontal = 16.dp),
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text("Start a post about a drink experience...", color = DrinkinMutedGray, fontSize = 14.sp)
@@ -115,16 +119,12 @@ fun FeedTabContent(
                         loadNextPage()
                     }
 
-                    val isLiked = likedPostIds.contains(post.id)
-                    val offset = likeCountOffsets[post.id] ?: 0
-                    val displayedLikeCount = post.likeCount + offset
-
                     val isSaved = savedPosts.any { it.id == post.id }
 
                     WebPostCard(
                         post = post,
-                        isLiked = isLiked,
-                        likeCount = displayedLikeCount,
+                        isLiked = post.myReaction != null,
+                        likeCount = post.likeCount,
                         onAuthorClick = {
                             onAuthorClick(post.author.id)
                         },

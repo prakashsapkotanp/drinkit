@@ -1,4 +1,7 @@
 package app.drinkin.web.saved
+import app.drinkin.web.*
+import app.drinkin.web.feed.*
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalFocusManager
@@ -40,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.*
 import app.drinkin.web.common.*
-import app.drinkin.web.feed.WebPostCard
 import io.ktor.client.call.body
 import io.ktor.client.plugins.ResponseException
 import io.ktor.client.request.get
@@ -48,6 +51,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image
+
 
 @Composable
 fun SavedTabContent(
@@ -69,7 +73,7 @@ fun SavedTabContent(
             items(savedPosts) { post ->
                 WebPostCard(
                     post = post,
-                    isLiked = false,
+                    isLiked = post.myReaction != null,
                     likeCount = post.likeCount,
                     onAuthorClick = {
                         onAuthorClick(post.author.id)

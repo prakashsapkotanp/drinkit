@@ -1,4 +1,6 @@
 package app.drinkin.web.feed
+import app.drinkin.web.*
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalFocusManager
@@ -134,18 +137,7 @@ fun WebPostCard(
                 }
             }
 
-            val adjustedReactions = post.reactionCounts.toMutableMap()
-            val reactionOffset = likeCount - post.likeCount
-            if (reactionOffset != 0) {
-                val currentCount = adjustedReactions["LIKE"] ?: 0
-                val newCount = currentCount + reactionOffset
-                if (newCount > 0) {
-                    adjustedReactions["LIKE"] = newCount
-                } else {
-                    adjustedReactions.remove("LIKE")
-                }
-            }
-            val activeReactions = adjustedReactions.filter { it.value > 0 }
+            val activeReactions = post.reactionCounts.filter { it.value > 0 }
             if (activeReactions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -184,22 +176,33 @@ fun WebPostCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(contentAlignment = Alignment.BottomStart) {
+                    val myReaction = post.myReaction
+                    val buttonPair = when (myReaction) {
+                        "LIKE" -> Triple(Icons.Default.ThumbUp, DrinkinAccentBlue, "Like")
+                        "LOVE" -> Triple(Icons.Default.Favorite, Color(0xFFE53E3E), "Love")
+                        "CHEERS" -> Triple(Icons.Default.Star, Color(0xFFD69E2E), "Cheers")
+                        "WOW" -> Triple(Icons.Default.Send, Color(0xFF319795), "Wow")
+                        "SAD" -> Triple(Icons.Default.Warning, Color(0xFF805AD5), "Sad")
+                        else -> Triple(Icons.Default.ThumbUp, DrinkinMutedGray, "Like")
+                    }
+                    val (buttonIcon, buttonColor, buttonText) = buttonPair
+
                     Row(
                         modifier = Modifier
                             .onPointerEvent(PointerEventType.Enter) { showReactions = true }
                             .onPointerEvent(PointerEventType.Exit) { showReactions = false }
-                            .clickable { onLikeToggle("LIKE") }
+                            .clickable { onLikeToggle(myReaction ?: "LIKE") }
                             .padding(vertical = 4.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ThumbUp,
-                            contentDescription = "Like",
-                            tint = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray,
+                            imageVector = buttonIcon,
+                            contentDescription = buttonText,
+                            tint = buttonColor,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Like ($likeCount)", color = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Text("$buttonText ($likeCount)", color = buttonColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
 
                     if (showReactions) {

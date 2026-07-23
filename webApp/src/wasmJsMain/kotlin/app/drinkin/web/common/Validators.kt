@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeImageBitmap
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalFocusManager
@@ -103,6 +104,32 @@ fun isUnderage(dobString: String): Boolean {
     } catch (e: Exception) {
         true
     }
+}
+
+fun updatePostReaction(post: Post, newReactionType: String?): Post {
+    val oldReaction = post.myReaction
+    val counts = post.reactionCounts.toMutableMap()
+
+    if (oldReaction != null) {
+        val currentCount = counts[oldReaction] ?: 0
+        if (currentCount > 1) {
+            counts[oldReaction] = currentCount - 1
+        } else {
+            counts.remove(oldReaction)
+        }
+    }
+
+    if (newReactionType != null) {
+        counts[newReactionType] = (counts[newReactionType] ?: 0) + 1
+    }
+
+    val totalLikes = counts.values.sum()
+
+    return post.copy(
+        myReaction = newReactionType,
+        reactionCounts = counts,
+        likeCount = totalLikes
+    )
 }
 
 fun setBridgeToken(token: String): Unit =
