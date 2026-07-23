@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.key.*
 import app.drinkin.shared.api.DrinkinApiClient
 import app.drinkin.shared.model.*
 import io.ktor.client.plugins.ResponseException
@@ -102,6 +103,32 @@ fun isUnderage(dobString: String): Boolean {
     } catch (e: Exception) {
         true
     }
+}
+
+fun updatePostReaction(post: Post, newReactionType: String?): Post {
+    val oldReaction = post.myReaction
+    val counts = post.reactionCounts.toMutableMap()
+
+    if (oldReaction != null) {
+        val currentCount = counts[oldReaction] ?: 0
+        if (currentCount > 1) {
+            counts[oldReaction] = currentCount - 1
+        } else {
+            counts.remove(oldReaction)
+        }
+    }
+
+    if (newReactionType != null) {
+        counts[newReactionType] = (counts[newReactionType] ?: 0) + 1
+    }
+
+    val totalLikes = counts.values.sum()
+
+    return post.copy(
+        myReaction = newReactionType,
+        reactionCounts = counts,
+        likeCount = totalLikes
+    )
 }
 
 private fun setBridgeToken(token: String): Unit =
@@ -683,12 +710,23 @@ fun WebDashboardScreen(
         loadInitialFeed()
     }
 
-    LaunchedEffect(currentTab) {
-        if (currentTab == DashboardTab.MY_GROUP) {
-            loadNetworkData()
-        } else if (currentTab == DashboardTab.CHAT) {
-            loadNetworkData()
-            loadConversationsList()
+    LaunchedEffect(currentTab, selectedConversationId) {
+        while (true) {
+            if (currentTab == DashboardTab.MY_GROUP) {
+                loadNetworkData()
+            } else if (currentTab == DashboardTab.CHAT) {
+                loadNetworkData()
+                loadConversationsList()
+                selectedConversationId?.let { convId ->
+                    try {
+                        val msgs = apiClient.getMessages(convId).items
+                        if (msgs.size != realMessages.size || msgs.firstOrNull()?.id != realMessages.firstOrNull()?.id) {
+                            realMessages = msgs
+                        }
+                    } catch (e: Exception) {}
+                }
+            }
+            delay(2000)
         }
     }
 
@@ -1091,10 +1129,31 @@ fun WebDashboardScreen(
                                     items(otherUserPosts) { post ->
                                         WebPostCard(
                                             post = post,
-                                            isLiked = false,
+                                            isLiked = post.myReaction != null,
                                             likeCount = post.likeCount,
                                             onAuthorClick = {},
-                                            onLikeToggle = { _ -> },
+                                            onLikeToggle = { reactionType ->
+                                                coroutineScope.launch {
+                                                    val currentMyReaction = post.myReaction
+                                                    val isRemove = currentMyReaction == reactionType
+                                                    val updatedPost = if (isRemove) {
+                                                        updatePostReaction(post, null)
+                                                    } else {
+                                                        updatePostReaction(post, reactionType)
+                                                    }
+                                                    otherUserPosts = otherUserPosts.map { if (it.id == post.id) updatedPost else it }
+
+                                                    try {
+                                                        if (isRemove) {
+                                                            apiClient.unlikePost(post.id)
+                                                        } else {
+                                                            apiClient.likePost(post.id, reactionType)
+                                                        }
+                                                    } catch (e: Exception) {
+                                                        otherUserPosts = otherUserPosts.map { if (it.id == post.id) post else it }
+                                                    }
+                                                }
+                                            },
                                             isSaved = false,
                                             onSaveToggle = {}
                                         )
@@ -1153,36 +1212,35 @@ fun WebDashboardScreen(
                                                 loadNextPage()
                                             }
 
-                                            val isLiked = likedPostIds.contains(post.id)
-                                            val offset = likeCountOffsets[post.id] ?: 0
-                                            val displayedLikeCount = post.likeCount + offset
-
                                             val isSaved = savedPosts.any { it.id == post.id }
 
                                             WebPostCard(
                                                 post = post,
-                                                isLiked = isLiked,
-                                                likeCount = displayedLikeCount,
+                                                isLiked = post.myReaction != null,
+                                                likeCount = post.likeCount,
                                                 onAuthorClick = {
                                                     viewingOtherUserId = post.author.id
                                                     loadOtherUserProfileAndPosts(post.author.id)
                                                 },
                                                 onLikeToggle = { reactionType ->
                                                     coroutineScope.launch {
-                                                        val isRemove = isLiked && reactionType == "LIKE"
-                                                        val newIsLiked = !isRemove
-                                                        likedPostIds = if (newIsLiked) likedPostIds + post.id else likedPostIds - post.id
-                                                        likeCountOffsets = likeCountOffsets + (post.id to (if (newIsLiked) (if (isLiked) offset else offset + 1) else offset - 1))
+                                                        val currentMyReaction = post.myReaction
+                                                        val isRemove = currentMyReaction == reactionType
+                                                        val updatedPost = if (isRemove) {
+                                                            updatePostReaction(post, null)
+                                                        } else {
+                                                            updatePostReaction(post, reactionType)
+                                                        }
+                                                        posts = posts.map { if (it.id == post.id) updatedPost else it }
 
                                                         try {
-                                                            if (newIsLiked) {
-                                                                apiClient.likePost(post.id, reactionType)
-                                                            } else {
+                                                            if (isRemove) {
                                                                 apiClient.unlikePost(post.id)
+                                                            } else {
+                                                                apiClient.likePost(post.id, reactionType)
                                                             }
                                                         } catch (e: Exception) {
-                                                            likedPostIds = if (newIsLiked) likedPostIds - post.id else likedPostIds + post.id
-                                                            likeCountOffsets = likeCountOffsets + (post.id to offset)
+                                                            posts = posts.map { if (it.id == post.id) post else it }
                                                         }
                                                     }
                                                 },
@@ -1493,6 +1551,23 @@ fun WebDashboardScreen(
                                                     }
                                                 }
 
+                                                val sendMessageAction = {
+                                                    if (chatInput.isNotBlank()) {
+                                                        val typed = chatInput
+                                                        chatInput = ""
+                                                        coroutineScope.launch {
+                                                            try {
+                                                                val sent = apiClient.sendMessage(activeConv.id, MessageRequest(text = typed))
+                                                                realMessages = realMessages + sent
+                                                                loadConversationsList()
+                                                                loadUnreadCounts()
+                                                            } catch (e: Exception) {
+                                                                errorMsg = getErrorMessage(e)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
                                                 // Clean footer container with bottom message input
                                                 Row(
                                                     modifier = Modifier
@@ -1506,8 +1581,23 @@ fun WebDashboardScreen(
                                                         value = chatInput,
                                                         onValueChange = { chatInput = it },
                                                         placeholder = { Text("Write a message...") },
-                                                        modifier = Modifier.weight(1f).heightIn(min = 40.dp),
-                                                        singleLine = true,
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .heightIn(min = 40.dp)
+                                                            .onPreviewKeyEvent { keyEvent ->
+                                                                if (keyEvent.key == Key.Enter && keyEvent.type == KeyEventType.KeyDown) {
+                                                                    if (keyEvent.isShiftPressed) {
+                                                                        false
+                                                                    } else {
+                                                                        sendMessageAction()
+                                                                        true
+                                                                    }
+                                                                } else {
+                                                                    false
+                                                                }
+                                                            },
+                                                        singleLine = false,
+                                                        maxLines = 4,
                                                         shape = RoundedCornerShape(20.dp),
                                                         textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
                                                         colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -1518,22 +1608,7 @@ fun WebDashboardScreen(
                                                     )
                                                     Spacer(modifier = Modifier.width(12.dp))
                                                     Button(
-                                                        onClick = {
-                                                            if (chatInput.isNotBlank()) {
-                                                                val typed = chatInput
-                                                                chatInput = ""
-                                                                coroutineScope.launch {
-                                                                    try {
-                                                                        val sent = apiClient.sendMessage(activeConv.id, MessageRequest(text = typed))
-                                                                        realMessages = realMessages + sent
-                                                                        loadConversationsList()
-                                                                        loadUnreadCounts()
-                                                                    } catch (e: Exception) {
-                                                                        errorMsg = getErrorMessage(e)
-                                                                    }
-                                                                }
-                                                            }
-                                                        },
+                                                        onClick = { sendMessageAction() },
                                                         enabled = chatInput.isNotBlank(),
                                                         colors = ButtonDefaults.buttonColors(
                                                             backgroundColor = Color(0xFF0A66C2),
@@ -1973,18 +2048,7 @@ fun WebPostCard(
                 }
             }
 
-            val adjustedReactions = post.reactionCounts.toMutableMap()
-            val reactionOffset = likeCount - post.likeCount
-            if (reactionOffset != 0) {
-                val currentCount = adjustedReactions["LIKE"] ?: 0
-                val newCount = currentCount + reactionOffset
-                if (newCount > 0) {
-                    adjustedReactions["LIKE"] = newCount
-                } else {
-                    adjustedReactions.remove("LIKE")
-                }
-            }
-            val activeReactions = adjustedReactions.filter { it.value > 0 }
+            val activeReactions = post.reactionCounts.filter { it.value > 0 }
             if (activeReactions.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -2023,22 +2087,33 @@ fun WebPostCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(contentAlignment = Alignment.BottomStart) {
+                    val myReaction = post.myReaction
+                    val buttonPair = when (myReaction) {
+                        "LIKE" -> Triple(Icons.Default.ThumbUp, DrinkinAccentBlue, "Like")
+                        "LOVE" -> Triple(Icons.Default.Favorite, Color(0xFFE53E3E), "Love")
+                        "CHEERS" -> Triple(Icons.Default.Star, Color(0xFFD69E2E), "Cheers")
+                        "WOW" -> Triple(Icons.Default.Send, Color(0xFF319795), "Wow")
+                        "SAD" -> Triple(Icons.Default.Warning, Color(0xFF805AD5), "Sad")
+                        else -> Triple(Icons.Default.ThumbUp, DrinkinMutedGray, "Like")
+                    }
+                    val (buttonIcon, buttonColor, buttonText) = buttonPair
+
                     Row(
                         modifier = Modifier
                             .onPointerEvent(PointerEventType.Enter) { showReactions = true }
                             .onPointerEvent(PointerEventType.Exit) { showReactions = false }
-                            .clickable { onLikeToggle("LIKE") }
+                            .clickable { onLikeToggle(myReaction ?: "LIKE") }
                             .padding(vertical = 4.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.ThumbUp,
-                            contentDescription = "Like",
-                            tint = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray,
+                            imageVector = buttonIcon,
+                            contentDescription = buttonText,
+                            tint = buttonColor,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Like ($likeCount)", color = if (isLiked) DrinkinAccentBlue else DrinkinMutedGray, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Text("$buttonText ($likeCount)", color = buttonColor, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
 
                     if (showReactions) {

@@ -83,6 +83,15 @@ class PostController(
         )
         val totalLikes = entity.reactionCounts.values.sum()
 
+        val currentUserId = getCurrentUserIdOrNull()
+        val myReactionStr = if (currentUserId != null) {
+            val reactionEntity = postReactionRepository.findByPostIdAndUserId(entity.id, currentUserId)
+            if (reactionEntity != null) {
+                val type = reactionTypeRepository.findById(reactionEntity.reactionTypeId).orElse(null)
+                type?.code
+            } else null
+        } else null
+
         return Post(
             id = entity.id.toString(),
             author = authorProfile,
@@ -96,7 +105,8 @@ class PostController(
             likeCount = totalLikes,
             reactionCounts = entity.reactionCounts,
             commentCount = entity.commentCount,
-            createdAt = entity.createdAt.toString()
+            createdAt = entity.createdAt.toString(),
+            myReaction = myReactionStr
         )
     }
 
